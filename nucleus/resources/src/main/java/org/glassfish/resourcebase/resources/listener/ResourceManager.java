@@ -333,6 +333,10 @@ public class ResourceManager implements PostConstruct, PreDestroy, ConfigListene
                                 if (deployer != null) {
                                     boolean newValue = Boolean.valueOf(event.getNewValue().toString());
                                     boolean oldValue = Boolean.valueOf(event.getOldValue().toString());
+                                     System.out.println("NEQW VAALLJDKSAJKLJKDKJDKLAJ|D = "  + event.getNewValue());
+                                     System.out.println("OLDVAALLJDKSAJKLJKDKJDKLAJ|D = "  + event.getOldValue());
+                                     System.out.println("NEW VAAAAAAAAAAAAAAAAAAA = " + newValue);
+                                     System.out.println("OLD VAAAAAAAAAAAAAAAAAAA = " + oldValue);
                                     if (!(newValue && oldValue)) {
                                         if (resource instanceof ServerResource) {
                                             if (!isServerResourceEnabled(resource)) {

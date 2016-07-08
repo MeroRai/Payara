@@ -266,6 +266,7 @@ public class CreateJMSResource implements AdminCommand {
                 aoAttrList.set("restype",  resourceType);
                 aoAttrList.set("raname",  DEFAULT_JMS_ADAPTER);
                 aoAttrList.set("target", target);
+                aoAttrList.set("description", description);
                 if(enabled!=null)
                     aoAttrList.set("enabled", Boolean.toString(enabled));
 
