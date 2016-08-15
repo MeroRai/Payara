@@ -89,6 +89,14 @@
       </connector-service>
        <transaction-service tx-log-dir="${com.sun.aas.instanceRoot}/logs" />
        <hazelcast-runtime-configuration></hazelcast-runtime-configuration>
+       <health-check-service-configuration>
+           <garbage-collector-checker></garbage-collector-checker>
+           <connection-pool-checker></connection-pool-checker>
+           <cpu-usage-checker></cpu-usage-checker>
+           <heap-memory-usage-checker></heap-memory-usage-checker>
+           <hogging-threads-checker></hogging-threads-checker>
+           <machine-memory-usage-checker></machine-memory-usage-checker>
+       </health-check-service-configuration>
        <asadmin-recorder-configuration></asadmin-recorder-configuration>
        <request-tracing-service-configuration>
          <log-notifier></log-notifier>
@@ -315,6 +323,14 @@
          </security-service>
          <transaction-service tx-log-dir="${com.sun.aas.instanceRoot}/logs" automatic-recovery="true" />
          <hazelcast-runtime-configuration></hazelcast-runtime-configuration>
+         <health-check-service-configuration>
+             <garbage-collector-checker></garbage-collector-checker>
+             <connection-pool-checker></connection-pool-checker>
+             <cpu-usage-checker></cpu-usage-checker>
+             <heap-memory-usage-checker></heap-memory-usage-checker>
+             <hogging-threads-checker></hogging-threads-checker>
+             <machine-memory-usage-checker></machine-memory-usage-checker>
+         </health-check-service-configuration>
          <request-tracing-service-configuration>
              <log-notifier></log-notifier>
          </request-tracing-service-configuration>

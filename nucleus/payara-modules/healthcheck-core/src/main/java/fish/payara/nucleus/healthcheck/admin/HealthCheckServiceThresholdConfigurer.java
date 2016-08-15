@@ -84,13 +84,13 @@ public class HealthCheckServiceThresholdConfigurer implements AdminCommand {
     @Param(name = "serviceName", optional = false)
     private String serviceName;
 
-    @Param(name = "thresholdCritical", optional = true)
+    @Param(name = "thresholdCritical", optional = true, defaultValue = "80")
     private String thresholdCritical;
 
-    @Param(name = "thresholdWarning", optional = true)
+    @Param(name = "thresholdWarning", optional = true, defaultValue = "50")
     private String thresholdWarning;
 
-    @Param(name = "thresholdGood", optional = true)
+    @Param(name = "thresholdGood", optional = true, defaultValue = "0")
     private String thresholdGood;
 
     @Param(name = "dynamic", optional = true, defaultValue = "false")

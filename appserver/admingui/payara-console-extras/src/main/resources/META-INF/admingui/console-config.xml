@@ -121,5 +121,21 @@ file and include the License file at packager/legal/LICENSE.txt.
         parentId="propSheetSection"
         content="hazelcast/hazelcastConfigLink.jsf"
     />
+    
+    <integration-point
+        id="healthcheck"
+        type="org.glassfish.admingui:navNode"
+        priority="90"
+        parentId="#{configNameId}"
+        content="pluginTreeNodeHealthCheck.jsf"
+    />
+ 
+    <integration-point
+        id="healthcheckLink"
+        type="org.glassfish.admingui:configuration"
+        priority="90"
+        parentId="propSheetSection"
+        content="healthCheck/healthCheckConfigLink.jsf"
+    />
 
 </console-config>
