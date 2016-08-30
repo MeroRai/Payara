@@ -22,12 +22,14 @@ import com.sun.enterprise.config.serverbeans.Config;
 import com.sun.enterprise.config.serverbeans.Domain;
 import com.sun.enterprise.util.ColumnFormatter;
 import com.sun.enterprise.util.StringUtils;
+import com.sun.enterprise.util.SystemPropertyConstants;
 import fish.payara.nucleus.healthcheck.HealthCheckConstants;
 import fish.payara.nucleus.healthcheck.configuration.Checker;
 import fish.payara.nucleus.healthcheck.configuration.HealthCheckServiceConfiguration;
 import fish.payara.nucleus.healthcheck.configuration.HoggingThreadsChecker;
 import fish.payara.nucleus.healthcheck.configuration.ThresholdDiagnosticsChecker;
 import fish.payara.nucleus.healthcheck.preliminary.BaseHealthCheck;
+import java.util.HashMap;
 import org.glassfish.api.ActionReport;
 import org.glassfish.api.I18n;
 import org.glassfish.api.Param;
@@ -43,6 +45,8 @@ import org.jvnet.hk2.config.types.Property;
 
 import javax.inject.Inject;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author mertcaliskan
@@ -52,20 +56,20 @@ import java.util.List;
 @CommandLock(CommandLock.LockType.NONE)
 @I18n("get.healthcheck.configuration")
 @ExecuteOn(value = {RuntimeType.DAS})
-@TargetType(value = {CommandTarget.DAS, CommandTarget.STANDALONE_INSTANCE, CommandTarget.CLUSTER, CommandTarget.CONFIG})
+@TargetType(value = {CommandTarget.DAS, CommandTarget.STANDALONE_INSTANCE, CommandTarget.CLUSTER, CommandTarget.CLUSTERED_INSTANCE, CommandTarget.CONFIG})
 @RestEndpoints({
-        @RestEndpoint(configBean = Domain.class,
-                opType = RestEndpoint.OpType.GET,
-                path = "get-healthcheck-configuration",
-                description = "List HealthCheck Configuration")
+    @RestEndpoint(configBean = Domain.class,
+            opType = RestEndpoint.OpType.GET,
+            path = "get-healthcheck-configuration",
+            description = "List HealthCheck Configuration")
 })
 public class GetHealthCheckConfiguration implements AdminCommand, HealthCheckConstants {
 
-    final static String baseHeaders[] = {"Name", "Enabled", "Time", "Unit"};
+    final static String baseHeaders[] = {"ServiceEnabled", "ServiceName", "Name", "Enabled", "Time", "Unit"};
     final static String hoggingThreadsHeaders[] = {"Name", "Enabled", "Time", "Unit", "Threshold Percentage",
-            "Retry Count"};
+        "Retry Count"};
     final static String thresholdDiagnosticsHeaders[] = {"Name", "Enabled", "Time", "Unit", "Critical Threshold",
-            "Warning Threshold", "Good Threshold"};
+        "Warning Threshold", "Good Threshold"};
 
     @Inject
     ServiceLocator habitat;
@@ -133,17 +137,65 @@ public class GetHealthCheckConfiguration implements AdminCommand, HealthCheckCon
                 Property thresholdGoodProperty = thresholdDiagnosticsChecker.getProperty(THRESHOLD_GOOD);
                 values[6] = thresholdGoodProperty != null ? thresholdGoodProperty.getValue() : "-";
                 thresholdDiagnosticsColumnFormatter.addRow(values);
-            }
-            else if (checker != null) {
-                Object values[] = new Object[4];
-                values[0] = checker.getName();
-                values[1] = checker.getEnabled();
-                values[2] = checker.getTime();
-                values[3] = checker.getUnit();
+                
+//                Map<String, Object> map1 = new HashMap<String, Object>(7);
+//                Properties extraProps1 = new Properties();
+//                map1.put("name", values[0]);
+//                map1.put("enabled", values[1]);
+//                map1.put("time", values[2]);
+//                map1.put("unit", values[3]);
+//                map1.put("thresholdCritical", values[4]);
+//                map1.put("thresholdWarning", values[5]);
+//                map1.put("thresholdGood", values[6]);
+//
+//                extraProps1.put("getHealthCheckConfigurationThreshold", map1);
+//                mainActionReport.setExtraProperties(extraProps1);
+//                @Param(name = "serviceName", optional = false)
+//    private String serviceName;
+//
+//    @Param(name = "thresholdCritical", optional = true)
+//    private String thresholdCritical;
+//
+//    @Param(name = "thresholdWarning", optional = true)
+//    private String thresholdWarning;
+//
+//    @Param(name = "thresholdGood", optional = true)
+//    private String thresholdGood;
+//
+//    @Param(name = "dynamic", optional = true, defaultValue = "false")
+//    protected Boolean dynamic;
+//
+//    @Param(name = "target", optional = true, defaultValue = SystemPropertyConstants.DAS_SERVER_NAME)
+//    protected String target;
+                
+            } else if (checker != null) {
+                Object values[] = new Object[6];
+                values[0] = configuration.getEnabled();
+                values[1] = serviceHandle.getActiveDescriptor().getName();
+                values[2] = checker.getName();
+                values[3] = checker.getEnabled();
+                values[4] = checker.getTime();
+                values[5] = checker.getUnit();
                 baseColumnFormatter.addRow(values);
+                
+                Map<String, Object> map = new HashMap<String, Object>(6);
+                Properties extraProps = new Properties();
+                map.put("serviceEnabled", values[0]);
+                map.put("serviceName", values[1]);
+                map.put("name", values[2]);
+                map.put("enabled", values[3]);
+                map.put("time", values[4]);
+                map.put("unit", values[5]);
+
+                extraProps.put("getHealthCheckConfiguration", map);
+                mainActionReport.setExtraProperties(extraProps);
             }
         }
+       
 
+//        map = new HashMap<String, Object>(6);
+//        Properties extraProps = new Properties();
+        // map.put(target, values1);
         if (!baseColumnFormatter.getContent().isEmpty()) {
             baseActionReport.setMessage(baseColumnFormatter.toString());
             baseActionReport.appendMessage(StringUtils.EOL);

@@ -1,0 +1,100 @@
+<!--
+
+ DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
+
+ Copyright (c) 2016 C2B2 Consulting Limited and/or its affiliates. 
+ All rights reserved.
+
+ The contents of this file are subject to the terms of the Common Development
+ and Distribution License("CDDL") (collectively, the "License").  You
+ may not use this file except in compliance with the License.  You can
+ obtain a copy of the License at
+ https://glassfish.dev.java.net/public/CDDL+GPL_1_1.html
+ or packager/legal/LICENSE.txt.  See the License for the specific
+ language governing permissions and limitations under the License.
+
+ When distributing the software, include this License Header Notice in each
+ file and include the License file at packager/legal/LICENSE.txt.
+-->
+
+<!initPage
+    setResourceBundle(key="i18nc" bundle="org.glassfish.common.admingui.Strings");
+    setResourceBundle(key="i18nhec" bundle="fish.payara.admingui.extras.Strings");
+    setResourceBundle(key="i18ncs" bundle="org.glassfish.cluster.admingui.Strings");
+    />
+<!composition template="/templates/default.layout"  guiTitle="Request Tracing Configuration"  >
+<!define name="content">
+<event>
+    <!beforeCreate 
+        setSessionAttribute(key="healthCheckTabs" value="healthCheckConfigure"); 
+        getRequestValue(key="configName" value="#{pageSession.configName}");
+        createMap(result="#{pageSession.attrsMap}")
+        mapPut(map="#{pageSession.attrsMap}" key="target" value="#{pageSession.configName}");
+        gf.restRequest(endpoint="#{sessionScope.REST_URL}/get-healthcheck-configuration?target=#{pageSession.configName}"  method="GET" result="#{requestScope.resp}");
+        setPageSessionAttribute(key="valueMap", value="#{requestScope.resp.data.extraProperties.getHealthCheckConfiguration}");
+        mapPut(map="#{pageSession.valueMap}" key="target" value="#{pageSession.configName}");
+        setPageSessionAttribute(key="convertToFalseList", value={"enabled","serviceEnabled","dynamic","serviceDynamic"});
+        if (#{pageSession.valueMap['enabled']}=true) {
+        setPageSessionAttribute(key="enabledSelected", value="true");
+        }
+        if (#{pageSession.valueMap['serviceEnabled']}=true) {
+        setPageSessionAttribute(key="serviceEnabledSelected", value="true");
+        }
+        setPageSessionAttribute(key="dynamic", value="true");
+        setPageSessionAttribute(key="serviceDynamic", value="true");
+        /> 
+</event>
+
+<sun:form id="propertyForm">
+#include "/payaraExtras/healthCheck/healthCheckTabs.inc"
+#include "/common/shared/alertMsg_1.inc"
+    <sun:title id="propertyContentPage" title="$resource{i18nhec.healthCheck.configurationTitle}" helpText="$resource{i18nhec.healthCheck.configurationTitleHelp}" >
+        <!facet pageButtonsTop>
+        <sun:panelGroup id="topButtons">
+            <sun:button id="saveButton"  text="$resource{i18n.button.Save}"
+                        onClick="submitAndDisable(this, '$resource{i18n.button.Processing}'); return false;" >
+                <!command
+                    mapPut(map="#{pageSession.valueMap}" key="enabled" value="#{pageSession.enabledSelected}");
+                    mapPut(map="#{pageSession.valueMap}" key="serviceEnabled" value="#{pageSession.serviceEnabledSelected}");
+                    mapPut(map="#{pageSession.valueMap}" key="dynamic" value="#{pageSession.dynamic}");
+                    mapPut(map="#{pageSession.valueMap}" key="serviceDynamic" value="#{pageSession.serviceDynamic}");
+                    prepareSuccessfulMsg();
+                    gf.updateEntity(endpoint="#{sessionScope.REST_URL}/set-healthcheck-configuration" attrs="#{pageSession.valueMap}" convertToFalse="#{pageSession.convertToFalseList}");
+                    />
+            </sun:button>
+        </sun:panelGroup>
+    </facet>
+</sun:title>
+<sun:propertySheet id="propertySheet">
+#include "/common/shared/configNameSection.inc"
+    <sun:propertySheetSection id="healthCheck">
+        <sun:property id="enabledProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}" label="$resource{i18nhec.healthCheck.configuration.enabled}"  helpText="$resource{i18nhec.healthCheck.configuration.enabledHelp}">
+            <sun:checkbox id="enabledProp" label="$resource{i18n.common.Enabled}" selected="#{pageSession.enabledSelected}" selectedValue="true" />
+        </sun:property>
+        <sun:property id="dynamic" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}" label="$resource{i18nhec.healthCheck.configuration.dynamic}">
+            <sun:checkbox id="dynamic" label="$resource{i18nhec.healthCheck.configuration.dynamic.label}" selected="#{pageSession.dynamic}" selectedValue="true" />
+        </sun:property>
+        <sun:property id="serviceEnabledProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}" label="$resource{i18nhec.healthCheck.configuration.service.enabled}"  helpText="$resource{i18nhec.healthCheck.configuration.service.enabledHelp}">
+            <sun:checkbox id="serviceEnabledProp" label="$resource{i18n.common.Enabled}" selected="#{pageSession.serviceEnabledSelected}" selectedValue="true" />
+        </sun:property>
+        <sun:property id="serviceDynamic" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}" label="$resource{i18nhec.healthCheck.configuration.service.dynamic}">
+            <sun:checkbox id="serviceDynamic" label="$resource{i18nhec.healthCheck.configuration.service.dynamic.label}" selected="#{pageSession.serviceDynamic}" selectedValue="true" />
+        </sun:property>
+        <sun:property id="serviceNameProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}" label="$resource{i18nhec.healthCheck.configuration.serviceName}">
+            <sun:dropDown id="serviceName" selected="#{pageSession.valueMap['serviceName']}" labels={"healthcheck-cpool", "healthcheck-cpu", "healthcheck-gc", "healthcheck-heap", "healthcheck-threads", "healthcheck-machinemem"} />
+        </sun:property>
+        <sun:property id="unitProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}" label="$resource{i18nhec.healthCheck.configuration.timeUnit}"  helpText="$resource{i18nhec.healthCheck.configuration.timeUnitHelp}">
+            <sun:dropDown id="unit" selected="#{pageSession.valueMap['unit']}" labels={"MICROSECONDS", "MILLISECONDS", "SECONDS", "MINUTES", "HOURS", "DAYS"} />
+        </sun:property>
+        <sun:property id="timeProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}" label="$resource{i18nhec.healthCheck.configuration.timeValue}"  helpText="$resource{i18nhec.healthCheck.configuration.timeValueHelp}">
+            <sun:textField id="time" columns="$int{40}"  styleClass="integer" maxLength="30" text="#{pageSession.valueMap['time']}" />
+        </sun:property>
+        <sun:property id="nameProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}" label="$resource{i18nhec.healthCheck.configuration.name}"  helpText="$resource{i18nhec.healthCheck.configuration.nameHelp}">
+            <sun:textField id="name" columns="$int{40}" maxLength="30" text="#{pageSession.valueMap['name']}" />
+        </sun:property>
+
+    </sun:propertySheetSection>
+</sun:propertySheet>
+</sun:form>
+</define>
+</composition>

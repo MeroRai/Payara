@@ -96,6 +96,14 @@
        <notification-service-configuration>
          <log-notifier-configuration></log-notifier-configuration>
        </notification-service-configuration>
+       <health-check-service-configuration>
+           <garbage-collector-checker></garbage-collector-checker>
+           <connection-pool-checker></connection-pool-checker>
+           <cpu-usage-checker></cpu-usage-checker>
+           <heap-memory-usage-checker></heap-memory-usage-checker>
+           <hogging-threads-checker></hogging-threads-checker>
+           <machine-memory-usage-checker></machine-memory-usage-checker>
+       </health-check-service-configuration>
        <batch-runtime-configuration data-source-lookup-name="jdbc/__default"></batch-runtime-configuration>
        <diagnostic-service />
       <security-service>
@@ -321,6 +329,14 @@
          <notification-service-configuration>
              <log-notifier-configuration></log-notifier-configuration>
          </notification-service-configuration>
+         <health-check-service-configuration>
+           <garbage-collector-checker></garbage-collector-checker>
+           <connection-pool-checker></connection-pool-checker>
+           <cpu-usage-checker></cpu-usage-checker>
+           <heap-memory-usage-checker></heap-memory-usage-checker>
+           <hogging-threads-checker></hogging-threads-checker>
+           <machine-memory-usage-checker></machine-memory-usage-checker>
+       </health-check-service-configuration>
          <diagnostic-service />
       <java-config debug-options="-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${JAVA_DEBUGGER_PORT}" system-classpath="" classpath-suffix="">
         <jvm-options>-XX:MaxPermSize=512m</jvm-options>

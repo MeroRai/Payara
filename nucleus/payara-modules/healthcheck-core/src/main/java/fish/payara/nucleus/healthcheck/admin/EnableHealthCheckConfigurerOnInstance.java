@@ -30,8 +30,6 @@ import org.glassfish.api.admin.AdminCommand;
 import org.glassfish.api.admin.AdminCommandContext;
 import org.glassfish.api.admin.CommandLock;
 import org.glassfish.api.admin.ExecuteOn;
-import org.glassfish.api.admin.RestEndpoint;
-import org.glassfish.api.admin.RestEndpoints;
 import org.glassfish.api.admin.RuntimeType;
 import org.glassfish.config.support.CommandTarget;
 import org.glassfish.config.support.TargetType;
@@ -49,7 +47,7 @@ import org.jvnet.hk2.annotations.Service;
 @ExecuteOn(RuntimeType.INSTANCE)
 @TargetType(value = {CommandTarget.DAS, CommandTarget.STANDALONE_INSTANCE, CommandTarget.CLUSTER, CommandTarget.CLUSTERED_INSTANCE, CommandTarget.CONFIG})
 public class EnableHealthCheckConfigurerOnInstance implements AdminCommand {
-    
+
     @Inject
     HealthCheckService service;
 
@@ -67,9 +65,9 @@ public class EnableHealthCheckConfigurerOnInstance implements AdminCommand {
             extraProperties = new Properties();
             actionReport.setExtraProperties(extraProperties);
         }
-        
+
         service.setEnabled(enabled);
-          actionReport.appendMessage("Health Check Service staus set to " + enabled + " on " + target );
+        actionReport.appendMessage("Health Check Service staus set to " + enabled + " on " + target);
         service.shutdownHealthCheck();
         service.bootstrapHealthCheck();
     }

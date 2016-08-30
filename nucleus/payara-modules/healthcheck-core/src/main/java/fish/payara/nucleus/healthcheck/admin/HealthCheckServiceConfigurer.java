@@ -21,6 +21,7 @@ package fish.payara.nucleus.healthcheck.admin;
 import com.sun.enterprise.config.serverbeans.Config;
 import com.sun.enterprise.config.serverbeans.Domain;
 import com.sun.enterprise.util.LocalStringManagerImpl;
+import com.sun.enterprise.util.SystemPropertyConstants;
 import fish.payara.nucleus.healthcheck.HealthCheckService;
 import fish.payara.nucleus.healthcheck.configuration.Checker;
 import fish.payara.nucleus.healthcheck.configuration.HealthCheckServiceConfiguration;
@@ -58,7 +59,7 @@ import java.util.logging.Logger;
 @TargetType({CommandTarget.DAS, CommandTarget.STANDALONE_INSTANCE, CommandTarget.CLUSTER, CommandTarget.CLUSTERED_INSTANCE, CommandTarget.CONFIG})
 @RestEndpoints({
     @RestEndpoint(configBean = Domain.class,
-            opType = RestEndpoint.OpType.GET,
+            opType = RestEndpoint.OpType.POST,
             path = "healthcheck-configure-service",
             description = "Enables/Disables Health Check Service Specified With Name")
 })
@@ -81,10 +82,10 @@ public class HealthCheckServiceConfigurer implements AdminCommand {
     @Param(name = "enabled", optional = false)
     private Boolean enabled;
 
-    @Param(name = "time", optional = true)
+    @Param(name = "time", optional = true, defaultValue = "5")
     private String time;
 
-    @Param(name = "unit", optional = true)
+    @Param(name = "unit", optional = true, defaultValue = "MINUTES")
     private String unit;
 
     @Param(name = "serviceName", optional = false)

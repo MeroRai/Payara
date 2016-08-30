@@ -69,10 +69,10 @@ public class EnableHealthCheckConfigurerOnDas implements AdminCommand {
             extraProperties = new Properties();
             actionReport.setExtraProperties(extraProperties);
         }
-        
+
         service.setEnabled(enabled);
-          actionReport.appendMessage("Health Check Service staus set to " + enabled + " on " + target );
-          
+        actionReport.appendMessage("Health Check Service staus set to " + enabled + " on " + target);
+
         service.shutdownHealthCheck();
         service.bootstrapHealthCheck();
     }

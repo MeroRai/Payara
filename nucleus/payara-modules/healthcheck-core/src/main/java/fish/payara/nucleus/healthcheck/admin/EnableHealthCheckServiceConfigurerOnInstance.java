@@ -66,10 +66,10 @@ public class EnableHealthCheckServiceConfigurerOnInstance implements AdminComman
     @Param(name = "enabled", optional = false)
     private Boolean enabled;
 
-    @Param(name = "time", optional = true)
+    @Param(name = "time", optional = true, defaultValue = "5")
     private String time;
 
-    @Param(name = "unit", optional = true)
+    @Param(name = "unit", optional = true, defaultValue = "MINUTES")
     private String unit;
 
     @Param(name = "serviceName", optional = false)
