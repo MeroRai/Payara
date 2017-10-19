@@ -41,6 +41,7 @@ package fish.payara.nucleus.requesttracing;
 
 import fish.payara.nucleus.requesttracing.domain.EventType;
 import fish.payara.nucleus.requesttracing.domain.RequestEvent;
+import java.io.Serializable;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.LinkedList;
@@ -52,7 +53,7 @@ import java.util.concurrent.TimeUnit;
  * Request Event Store
  * @author steve
  */
-public class RequestTrace {
+public class RequestTrace implements Serializable, Comparable<RequestTrace> {
 
     public RequestTrace() {
         trace = new LinkedList<>();
@@ -199,5 +200,33 @@ public class RequestTrace {
 
     boolean isCompleted() {
         return completed;
+    }
+
+    @Override
+    public int compareTo(RequestTrace requestTrace) {
+        return Long.compare(requestTrace.elapsedTime, elapsedTime);
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        
+        if (o == null || this.getClass() != o.getClass()) {
+            return false;
+        }
+
+        RequestTrace that = (RequestTrace) o;
+
+        return elapsedTime == that.elapsedTime && (this.toString() != null ? 
+                this.toString().equals(that.toString()) : that.toString() == null);
+    }
+    
+    @Override
+    public int hashCode() {
+        int result = (int) (elapsedTime ^ (elapsedTime >>> 32));
+        result = 31 * result + (this.toString() != null ? this.toString().hashCode() : 0);
+        return result;
     }
 }

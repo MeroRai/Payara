@@ -42,6 +42,8 @@ package fish.payara.nucleus.requesttracing;
 import com.sun.enterprise.config.serverbeans.Config;
 import com.sun.enterprise.config.serverbeans.Domain;
 import com.sun.enterprise.config.serverbeans.Server;
+import fish.payara.nucleus.events.HazelcastEvents;
+import fish.payara.nucleus.hazelcast.HazelcastCore;
 import fish.payara.nucleus.notification.NotificationService;
 import fish.payara.nucleus.notification.TimeUtil;
 import fish.payara.nucleus.notification.configuration.Notifier;
@@ -125,13 +127,16 @@ public class RequestTracingService implements EventListener, ConfigListener {
     RequestEventStore requestEventStore;
 
     @Inject
-    HistoricRequestTracingEventStore historicRequestTracingEventStore;
+    RequestTraceStore historicRequestTracingEventStore;
 
     @Inject
     NotificationEventFactoryStore eventFactoryStore;
 
     @Inject
     private NotifierExecutionOptionsFactoryStore executionOptionsFactoryStore;
+    
+    @Inject
+    private HazelcastCore hazelcast;
 
     private ScheduledExecutorService historicCleanerExecutor;
 
@@ -167,9 +172,22 @@ public class RequestTracingService implements EventListener, ConfigListener {
 
     @Override
     public void event(Event event) {
-        if (event.is(EventTypes.SERVER_READY)) {
+        // If Hazelcast is enabled, wait for it, otherwise just bootstrap when the server is ready
+        if (hazelcast.isEnabled()) {
+            if (event.is(HazelcastEvents.HAZELCAST_BOOTSTRAP_COMPLETE)) {
+                bootstrapRequestTracingService();
+            }
+        } else {
+            if (event.is(EventTypes.SERVER_READY)) {
+                bootstrapRequestTracingService();
+            }
+        }
+        
+        // If Hazelcast has shutdown, reinitialise request tracing
+        if (event.is(HazelcastEvents.HAZELCAST_SHUTDOWN_COMPLETE)) {
             bootstrapRequestTracingService();
         }
+
         transactions.addListenerForType(RequestTracingServiceConfiguration.class, this);
     }
 
@@ -301,7 +319,7 @@ public class RequestTracingService implements EventListener, ConfigListener {
 
             // Store the trace to the historical event store if it's enabled
             if (executionOptions.isHistoricalTraceEnabled()) {
-                historicRequestTracingEventStore.addTrace(elapsedTime, traceAsString);
+                historicRequestTracingEventStore.addTrace(elapsedTime, requestEventStore.getTrace());
             }
 
             for (NotifierExecutionOptions notifierExecutionOptions : getExecutionOptions().getNotifierExecutionOptionsList().values()) {

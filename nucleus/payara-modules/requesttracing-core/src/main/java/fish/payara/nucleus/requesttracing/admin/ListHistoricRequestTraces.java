@@ -39,7 +39,7 @@
 package fish.payara.nucleus.requesttracing.admin;
 
 import com.sun.enterprise.util.ColumnFormatter;
-import fish.payara.nucleus.requesttracing.HistoricRequestTracingEventStore;
+import fish.payara.nucleus.requesttracing.RequestTraceStore;
 import fish.payara.nucleus.requesttracing.RequestTracingService;
 import fish.payara.nucleus.requesttracing.configuration.RequestTracingServiceConfiguration;
 import fish.payara.nucleus.requesttracing.domain.HistoricRequestTracingEvent;
@@ -89,7 +89,7 @@ public class ListHistoricRequestTraces implements AdminCommand {
     private RequestTracingService service;
 
     @Inject
-    private HistoricRequestTracingEventStore eventStore;
+    private RequestTraceStore eventStore;
 
     @Inject
     ServerEnvironment server;
@@ -126,19 +126,19 @@ public class ListHistoricRequestTraces implements AdminCommand {
         Properties extrasProps = new Properties();
         List<Map<String, String>> historic = new ArrayList<>();
 
-        HistoricRequestTracingEvent[] traces = eventStore.getTraces(first);
-        for (HistoricRequestTracingEvent historicRequestEvent : traces) {
-            Map<String, String> messages = new LinkedHashMap<>();
-            Object values[] = new Object[3];
-            values[0] = historicRequestEvent.getOccurringTime();
-            values[1] = historicRequestEvent.getElapsedTime();
-            values[2] = historicRequestEvent.getMessage();
-            messages.put("occuringTime",values[0].toString());
-            messages.put("elapsedTime",values[1].toString());
-            messages.put("message", (String) values[2]);
-            historic.add(messages);
-            columnFormatter.addRow(values);
-        }
+//        HistoricRequestTracingEvent[] traces = eventStore.getTraces(first);
+//        for (HistoricRequestTracingEvent historicRequestEvent : traces) {
+//            Map<String, String> messages = new LinkedHashMap<>();
+//            Object values[] = new Object[3];
+//            values[0] = historicRequestEvent.getOccurringTime();
+//            values[1] = historicRequestEvent.getElapsedTime();
+//            values[2] = historicRequestEvent.getMessage();
+//            messages.put("occuringTime",values[0].toString());
+//            messages.put("elapsedTime",values[1].toString());
+//            messages.put("message", (String) values[2]);
+//            historic.add(messages);
+//            columnFormatter.addRow(values);
+//        }
 
         actionReport.setMessage(columnFormatter.toString());
         extrasProps.put("historicmessages", historic);

@@ -18,10 +18,15 @@
 package fish.payara.nucleus.store;
 
 import com.hazelcast.core.IMap;
+import com.hazelcast.core.MultiMap;
 import fish.payara.nucleus.events.HazelcastEvents;
 import fish.payara.nucleus.hazelcast.HazelcastCore;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -123,4 +128,17 @@ public class ClusteredStore implements EventListener {
         return result;
     }
     
+    /**
+     * Gets the requested MultiMap from Hazelcast. Use this if you want to store a collection in Hazelcast.
+     * @param storeName The MultiMap to get
+     * @return The MultiMap matching the storeName parameter, or null if the MultiMap does not exist
+     */
+    public MultiMap<Serializable, Serializable> getMultiMap(String storeName) {
+        MultiMap<Serializable, Serializable> multiMap = null;
+        if (hzCore.isEnabled()) {
+            multiMap = hzCore.getInstance().getMultiMap(storeName);
+        } 
+        
+        return multiMap;
+    }
 }

@@ -38,17 +38,18 @@
  */
 package fish.payara.nucleus.requesttracing;
 
+import com.hazelcast.core.MultiMap;
 import fish.payara.nucleus.hazelcast.HazelcastCore;
 import fish.payara.nucleus.notification.domain.BoundedTreeSet;
 import fish.payara.nucleus.requesttracing.domain.HistoricRequestTracingEvent;
 import fish.payara.nucleus.requesttracing.store.ReservoirBoundedTreeSet;
 import fish.payara.nucleus.store.ClusteredStore;
-import org.glassfish.api.admin.ServerEnvironment;
+import java.util.Map;
+import java.util.NavigableSet;
 import org.jvnet.hk2.annotations.Service;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.NavigableSet;
 
 /**
  * Stores historic request traces with descending elapsed time. Comparator is implemented on {@link HistoricRequestTracingEvent}
@@ -57,67 +58,81 @@ import java.util.NavigableSet;
  */
 @Service
 @Singleton
-public class HistoricRequestTracingEventStore {
+public class RequestTraceStore {
 
-    private static final String HISTORIC_REQUEST_EVENT_STORE = "HISTORIC_REQUEST_EVENT_STORE";
-
-    @Inject
-    private HazelcastCore hzCore;
+    private static final String REQUEST_TRACE_STORE = "REQUEST_TRACE_STORE";
 
     @Inject
-    private ServerEnvironment serverEnv;
+    private HazelcastCore hazelcast;
 
     @Inject
-    ClusteredStore store;
+    ClusteredStore clusterStore;
 
-    private BoundedTreeSet<HistoricRequestTracingEvent> historicStore;
-
+    private MultiMap<String, RequestTrace> traceStore;
+    private String instanceId;
+    private BoundedTreeSet<RequestTrace> localTraceStore;
+    
     void initialize(int storeSize, boolean reservoirSamplingEnabled) {
-        if (reservoirSamplingEnabled) {
-            historicStore = new ReservoirBoundedTreeSet<>(storeSize);
+        if (hazelcast.isEnabled()) {
+            instanceId = hazelcast.getUUID();
+            MultiMap clusterTraceStore = clusterStore.getMultiMap(REQUEST_TRACE_STORE);
+
+            if (clusterTraceStore != null) {
+                traceStore = clusterTraceStore;
+            }
+        } else if (reservoirSamplingEnabled) {
+            localTraceStore = new ReservoirBoundedTreeSet<>(storeSize);
         } else {
-            historicStore = new BoundedTreeSet<>(storeSize);
-        }
-
-        if (hzCore.isEnabled()) {
-            String instanceName = serverEnv.getInstanceName();
-            BoundedTreeSet<HistoricRequestTracingEvent> instanceHistoricStore = (BoundedTreeSet<HistoricRequestTracingEvent>) store.get(HISTORIC_REQUEST_EVENT_STORE, instanceName);
-
-            if (instanceHistoricStore == null) {
-                store.set(HISTORIC_REQUEST_EVENT_STORE, instanceName, historicStore);
-            }
-            else {
-                historicStore = instanceHistoricStore;
-            }
+            localTraceStore = new BoundedTreeSet<>(storeSize);
         }
     }
 
-    void addTrace(long elapsedTime, String message) {
-        historicStore.add(new HistoricRequestTracingEvent(System.currentTimeMillis(), elapsedTime, message));
+    void addTrace(long elapsedTime, RequestTrace requestTrace) {
+        if (hazelcast.isEnabled()) {
+            traceStore.put(instanceId, requestTrace);
+        } else {
+            localTraceStore.add(requestTrace);
+        }
     }
 
-    public HistoricRequestTracingEvent[] getTraces() {
-        HistoricRequestTracingEvent[] emptyArray = new HistoricRequestTracingEvent[0];
-        if (historicStore != null) {
-            return historicStore.toArray(emptyArray);
+    public RequestTrace[] getTraces() {
+        RequestTrace[] traces = new RequestTrace[0];
+        
+        if (hazelcast.isEnabled()) {
+            traces = traceStore.get(instanceId).toArray(traces);
+        } else {
+            traces = localTraceStore.toArray(traces);
         }
-        return emptyArray;
+        
+        return traces;
     }
 
-    public HistoricRequestTracingEvent[] getTraces(Integer limit) {
-        HistoricRequestTracingEvent[] result;
-        HistoricRequestTracingEvent[] historicEvents = historicStore.toArray(new HistoricRequestTracingEvent[historicStore.size()]);
-        if (limit < historicEvents.length) {
-            result = new HistoricRequestTracingEvent[limit];
-            System.arraycopy(historicEvents, 0, result, 0, limit);
+    public RequestTrace[] getTraces(Integer limit) {
+        RequestTrace[] traces;
+        
+        if (hazelcast.isEnabled()) {
+            traces = copyToArray(traceStore.get(instanceId).toArray(new RequestTrace[traceStore.valueCount(instanceId)]), 
+                    limit);
+        } else {
+            traces = copyToArray(localTraceStore.toArray(new RequestTrace[localTraceStore.size()]), limit);
         }
-        else {
-            result = historicEvents;
+        
+        return traces;
+    }
+    
+    private RequestTrace[] copyToArray(RequestTrace[] traceStore, Integer limit) {
+        RequestTrace[] traces;
+        if (limit < traceStore.length) {
+            traces = new RequestTrace[limit];
+            System.arraycopy(traceStore, 0, traces, 0, limit);
+        } else {
+            traces = traceStore;
         }
-        return result;
+        
+        return traces;
     }
 
-    public NavigableSet<HistoricRequestTracingEvent> getHistoricStore() {
-        return historicStore;
+    public NavigableSet<RequestTrace> getLocalRequestTraceStore() {
+        return localTraceStore;
     }
 }
