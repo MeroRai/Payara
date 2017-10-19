@@ -42,7 +42,6 @@ import com.sun.enterprise.util.ColumnFormatter;
 import fish.payara.nucleus.requesttracing.RequestTraceStore;
 import fish.payara.nucleus.requesttracing.RequestTracingService;
 import fish.payara.nucleus.requesttracing.configuration.RequestTracingServiceConfiguration;
-import fish.payara.nucleus.requesttracing.domain.HistoricRequestTracingEvent;
 import fish.payara.nucleus.requesttracing.domain.execoptions.RequestTracingExecutionOptions;
 import org.glassfish.api.ActionReport;
 import org.glassfish.api.I18n;

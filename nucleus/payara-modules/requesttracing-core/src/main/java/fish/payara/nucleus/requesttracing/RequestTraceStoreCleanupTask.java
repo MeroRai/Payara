@@ -38,7 +38,7 @@
  */
 package fish.payara.nucleus.requesttracing;
 
-import fish.payara.nucleus.requesttracing.domain.HistoricRequestTracingEvent;
+import java.util.Collection;
 import org.glassfish.internal.api.Globals;
 
 import java.util.Iterator;
@@ -48,25 +48,38 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author mertcaliskan
  */
-final public class HistoricRequestTracingCleanupTask implements Runnable {
+final public class RequestTraceStoreCleanupTask implements Runnable {
 
     private final long timeLimit;
 
-    HistoricRequestTracingCleanupTask(long timeLimit) {
+    RequestTraceStoreCleanupTask(long timeLimit) {
         this.timeLimit = timeLimit;
     }
 
+    @Override
     public void run() {
-        HistoricRequestTracingEventStore store = Globals.getDefaultHabitat().getService(HistoricRequestTracingEventStore.class);
-        NavigableSet<HistoricRequestTracingEvent> historicStore = store.getHistoricStore();
-        Iterator<HistoricRequestTracingEvent> iterator = historicStore.descendingIterator();
+        RequestTraceStore traceStore = Globals.getDefaultHabitat().getService(RequestTraceStore.class);
+        
+        if (traceStore.isClustered()) {
+            Collection<RequestTrace> tracesCollection = traceStore.getLocalClusteredRequestTraces();
+            
+            for (RequestTrace trace : tracesCollection) {
+                long upTimeInMillis = System.currentTimeMillis() - trace.getStartTime();
+                if (TimeUnit.MILLISECONDS.toSeconds(upTimeInMillis) > timeLimit) {
+                    tracesCollection.remove(trace);
+                }
+            }
+        } else {
+            NavigableSet<RequestTrace> tracesSet = traceStore.getLocalRequestTraceStore();
+            Iterator<RequestTrace> iterator = tracesSet.descendingIterator();
 
-        while(iterator.hasNext()) {
-            HistoricRequestTracingEvent event = iterator.next();
-            long upTimeInMillis = System.currentTimeMillis() - event.getOccurringTime();
-            if (TimeUnit.MILLISECONDS.toSeconds(upTimeInMillis) > timeLimit) {
-                historicStore.remove(event);
+            while(iterator.hasNext()) {
+                RequestTrace event = iterator.next();
+                long upTimeInMillis = System.currentTimeMillis() - event.getStartTime();
+                if (TimeUnit.MILLISECONDS.toSeconds(upTimeInMillis) > timeLimit) {
+                    tracesSet.remove(event);
+                }
             }
         }
-    }
+    }  
 }

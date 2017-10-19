@@ -223,7 +223,7 @@ public class RequestTracingService implements EventListener, ConfigListener {
                     long period = executionOptions.getHistoricalTraceTimeout() > TimeUtil.CLEANUP_TASK_FIVE_MIN_PERIOD
                             ? TimeUtil.CLEANUP_TASK_FIVE_MIN_PERIOD : executionOptions.getHistoricalTraceTimeout();
                     historicCleanerExecutor.scheduleAtFixedRate(
-                            new HistoricRequestTracingCleanupTask(executionOptions.getHistoricalTraceTimeout()), 0, period, TimeUnit.SECONDS);
+                            new RequestTraceStoreCleanupTask(executionOptions.getHistoricalTraceTimeout()), 0, period, TimeUnit.SECONDS);
                 }
 
             }

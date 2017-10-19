@@ -22,11 +22,7 @@ import com.hazelcast.core.MultiMap;
 import fish.payara.nucleus.events.HazelcastEvents;
 import fish.payara.nucleus.hazelcast.HazelcastCore;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -56,6 +52,10 @@ public class ClusteredStore implements EventListener {
     @PostConstruct
     public void postConstruct() {
         events.register(this);
+    }
+    
+    public String getInstanceId() {
+        return hzCore.getUUID();
     }
     
     public boolean isEnabled() {
@@ -138,6 +138,8 @@ public class ClusteredStore implements EventListener {
         if (hzCore.isEnabled()) {
             multiMap = hzCore.getInstance().getMultiMap(storeName);
         } 
+        
+        
         
         return multiMap;
     }

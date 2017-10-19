@@ -39,12 +39,10 @@
 package fish.payara.nucleus.requesttracing;
 
 import com.hazelcast.core.MultiMap;
-import fish.payara.nucleus.hazelcast.HazelcastCore;
 import fish.payara.nucleus.notification.domain.BoundedTreeSet;
-import fish.payara.nucleus.requesttracing.domain.HistoricRequestTracingEvent;
 import fish.payara.nucleus.requesttracing.store.ReservoirBoundedTreeSet;
 import fish.payara.nucleus.store.ClusteredStore;
-import java.util.Map;
+import java.util.Collection;
 import java.util.NavigableSet;
 import org.jvnet.hk2.annotations.Service;
 
@@ -63,33 +61,42 @@ public class RequestTraceStore {
     private static final String REQUEST_TRACE_STORE = "REQUEST_TRACE_STORE";
 
     @Inject
-    private HazelcastCore hazelcast;
+    private ClusteredStore clusteredStore;
 
-    @Inject
-    ClusteredStore clusterStore;
-
-    private MultiMap<String, RequestTrace> traceStore;
     private String instanceId;
+    private int storeSize;
+    
+    private boolean isClustered;
+    private MultiMap<String, RequestTrace> clusteredTraceStore;
     private BoundedTreeSet<RequestTrace> localTraceStore;
     
-    void initialize(int storeSize, boolean reservoirSamplingEnabled) {
-        if (hazelcast.isEnabled()) {
-            instanceId = hazelcast.getUUID();
-            MultiMap clusterTraceStore = clusterStore.getMultiMap(REQUEST_TRACE_STORE);
+    protected void initialize(int storeSize, boolean reservoirSamplingEnabled) {
+        this.storeSize = storeSize;
+        
+        if (clusteredStore.isEnabled()) {
+            isClustered = true;
+            
+            instanceId = clusteredStore.getInstanceId();
+            MultiMap clusteredTracesMultiMap = clusteredStore.getMultiMap(REQUEST_TRACE_STORE);
 
-            if (clusterTraceStore != null) {
-                traceStore = clusterTraceStore;
+            if (clusteredTracesMultiMap != null) {
+                clusteredTraceStore = clusteredTracesMultiMap;
             }
         } else if (reservoirSamplingEnabled) {
             localTraceStore = new ReservoirBoundedTreeSet<>(storeSize);
         } else {
+            isClustered = false;
             localTraceStore = new BoundedTreeSet<>(storeSize);
         }
     }
 
-    void addTrace(long elapsedTime, RequestTrace requestTrace) {
-        if (hazelcast.isEnabled()) {
-            traceStore.put(instanceId, requestTrace);
+    protected void addTrace(long elapsedTime, RequestTrace requestTrace) {
+        if (isClustered) {
+            clusteredTraceStore.put(instanceId, requestTrace);
+            
+            if (clusteredTraceStore.get(instanceId).size() > storeSize) {
+                clusteredTraceStore.remove(instanceId, )
+            }
         } else {
             localTraceStore.add(requestTrace);
         }
@@ -98,8 +105,8 @@ public class RequestTraceStore {
     public RequestTrace[] getTraces() {
         RequestTrace[] traces = new RequestTrace[0];
         
-        if (hazelcast.isEnabled()) {
-            traces = traceStore.get(instanceId).toArray(traces);
+        if (isClustered) {
+            traces = clusteredTraceStore.get(instanceId).toArray(traces);
         } else {
             traces = localTraceStore.toArray(traces);
         }
@@ -110,8 +117,8 @@ public class RequestTraceStore {
     public RequestTrace[] getTraces(Integer limit) {
         RequestTrace[] traces;
         
-        if (hazelcast.isEnabled()) {
-            traces = copyToArray(traceStore.get(instanceId).toArray(new RequestTrace[traceStore.valueCount(instanceId)]), 
+        if (isClustered) {
+            traces = copyToArray(clusteredTraceStore.get(instanceId).toArray(new RequestTrace[clusteredTraceStore.valueCount(instanceId)]), 
                     limit);
         } else {
             traces = copyToArray(localTraceStore.toArray(new RequestTrace[localTraceStore.size()]), limit);
@@ -132,7 +139,21 @@ public class RequestTraceStore {
         return traces;
     }
 
+    public boolean isClustered() {
+        return isClustered;
+    }
+    
     public NavigableSet<RequestTrace> getLocalRequestTraceStore() {
         return localTraceStore;
     }
+    
+    public Collection<RequestTrace> getLocalClusteredRequestTraces() {
+        return clusteredTraceStore.get(instanceId);
+    }
+    
+    public MultiMap<String, RequestTrace> getClusteredRequestTraceStore() {
+        return clusteredTraceStore;
+    }
+    
+    
 }
