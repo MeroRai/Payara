@@ -42,7 +42,10 @@ import com.hazelcast.core.MultiMap;
 import fish.payara.nucleus.notification.domain.BoundedTreeSet;
 import fish.payara.nucleus.requesttracing.store.ReservoirBoundedTreeSet;
 import fish.payara.nucleus.store.ClusteredStore;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.NavigableSet;
 import org.jvnet.hk2.annotations.Service;
 
@@ -81,6 +84,10 @@ public class RequestTraceStore {
 
             if (clusteredTracesMultiMap != null) {
                 clusteredTraceStore = clusteredTracesMultiMap;
+            } else {
+                // If we've returned null, something has gone wrong with Hazelcast, so go back to offline behaviour
+                isClustered = false;
+                localTraceStore = new BoundedTreeSet<>(storeSize);
             }
         } else if (reservoirSamplingEnabled) {
             localTraceStore = new ReservoirBoundedTreeSet<>(storeSize);
@@ -95,7 +102,8 @@ public class RequestTraceStore {
             clusteredTraceStore.put(instanceId, requestTrace);
             
             if (clusteredTraceStore.get(instanceId).size() > storeSize) {
-                clusteredTraceStore.remove(instanceId, )
+                List<RequestTrace> traces = sortLocalClusteredRequestTraces();
+                clusteredTraceStore.remove(instanceId, traces.get(traces.size() - 1));
             }
         } else {
             localTraceStore.add(requestTrace);
@@ -118,8 +126,8 @@ public class RequestTraceStore {
         RequestTrace[] traces;
         
         if (isClustered) {
-            traces = copyToArray(clusteredTraceStore.get(instanceId).toArray(new RequestTrace[clusteredTraceStore.valueCount(instanceId)]), 
-                    limit);
+            traces = copyToArray(sortLocalClusteredRequestTraces().toArray(
+                    new RequestTrace[clusteredTraceStore.valueCount(instanceId)]), limit);
         } else {
             traces = copyToArray(localTraceStore.toArray(new RequestTrace[localTraceStore.size()]), limit);
         }
@@ -155,5 +163,9 @@ public class RequestTraceStore {
         return clusteredTraceStore;
     }
     
-    
+    private List<RequestTrace> sortLocalClusteredRequestTraces() {
+        List<RequestTrace> traces = new ArrayList(clusteredTraceStore.get(instanceId));
+        Collections.sort(traces);
+        return traces;
+    }
 }

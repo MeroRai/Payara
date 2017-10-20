@@ -39,6 +39,7 @@
  */
 package fish.payara.nucleus.requesttracing.domain;
 
+import java.io.Serializable;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -49,7 +50,7 @@ import java.util.UUID;
  *
  * Event class that stores traced values.
  */
-public class RequestEvent {
+public class RequestEvent implements Serializable {
 
     private final UUID id;
     private UUID conversationId;
