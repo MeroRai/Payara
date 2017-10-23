@@ -45,8 +45,10 @@ import fish.payara.nucleus.store.ClusteredStore;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableSet;
+import java.util.Random;
 import org.jvnet.hk2.annotations.Service;
 
 import javax.inject.Inject;
@@ -70,11 +72,17 @@ public class RequestTraceStore {
     private int storeSize;
     
     private boolean isClustered;
+    private boolean reservoirStyle;
+    private long reservoirCounter;
+    private Random random;
     private MultiMap<String, RequestTrace> clusteredTraceStore;
     private BoundedTreeSet<RequestTrace> localTraceStore;
     
     protected void initialize(int storeSize, boolean reservoirSamplingEnabled) {
         this.storeSize = storeSize;
+        this.reservoirStyle = reservoirSamplingEnabled;
+        reservoirCounter = 0;
+        random = new Random();
         
         if (clusteredStore.isEnabled()) {
             isClustered = true;
@@ -89,7 +97,8 @@ public class RequestTraceStore {
                 isClustered = false;
                 localTraceStore = new BoundedTreeSet<>(storeSize);
             }
-        } else if (reservoirSamplingEnabled) {
+        } else if (reservoirStyle) {
+            isClustered = false;
             localTraceStore = new ReservoirBoundedTreeSet<>(storeSize);
         } else {
             isClustered = false;
@@ -99,11 +108,35 @@ public class RequestTraceStore {
 
     protected void addTrace(long elapsedTime, RequestTrace requestTrace) {
         if (isClustered) {
-            clusteredTraceStore.put(instanceId, requestTrace);
-            
             if (clusteredTraceStore.get(instanceId).size() > storeSize) {
-                List<RequestTrace> traces = sortLocalClusteredRequestTraces();
-                clusteredTraceStore.remove(instanceId, traces.get(traces.size() - 1));
+                if (reservoirStyle) {
+                    if (reservoirCounter < Long.MAX_VALUE) {
+                        reservoirCounter++;
+                    }
+                    
+                    // If the store isn't full yet, just add the item
+                    if (clusteredTraceStore.valueCount(instanceId) < storeSize) {
+                        clusteredTraceStore.put(instanceId, requestTrace);  
+                    } else {
+                        // Probability of keeping the new item
+                        double probability = (double) storeSize / reservoirCounter;
+                        boolean keepItem = random.nextDouble() < probability;
+
+                        if (keepItem) {
+                            // Replace a random item in the list
+                            clusteredTraceStore.remove(instanceId, 
+                                    clusteredTraceStore.get(instanceId).toArray()[random.nextInt(storeSize - 1)]);
+                            clusteredTraceStore.put(instanceId, requestTrace);
+                        }
+                    }
+                } else {
+                    List<RequestTrace> traces = sortLocalClusteredRequestTraces();
+                    
+                    if (traces.get(traces.size() -1).compareTo(requestTrace) < 0) {
+                        clusteredTraceStore.remove(instanceId, traces.get(traces.size() - 1));
+                        clusteredTraceStore.put(instanceId, requestTrace);
+                    }
+                }
             }
         } else {
             localTraceStore.add(requestTrace);
