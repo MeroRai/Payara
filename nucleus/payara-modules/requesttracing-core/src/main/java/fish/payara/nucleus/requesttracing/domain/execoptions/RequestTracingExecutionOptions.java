@@ -60,9 +60,9 @@ public class RequestTracingExecutionOptions {
     private boolean reservoirSamplingEnabled;
     private Long thresholdValue;
     private TimeUnit thresholdUnit;
-    private boolean historicalTraceEnabled;
-    private Integer historicalTraceStoreSize;
-    private Long historicalTraceTimeout;
+    private boolean traceStoreEnabled;
+    private Integer traceStoreSize;
+    private Long traceStoreTimeout;
     private Map<NotifierType, NotifierExecutionOptions> notifierExecutionOptionsList = new HashMap<NotifierType, NotifierExecutionOptions>();
 
     public void addNotifierExecutionOption(NotifierExecutionOptions notifierExecutionOptions) {
@@ -125,28 +125,28 @@ public class RequestTracingExecutionOptions {
         this.thresholdUnit = thresholdUnit;
     }
 
-    public boolean isHistoricalTraceEnabled() {
-        return historicalTraceEnabled;
+    public boolean isTraceStoreEnabled() {
+        return traceStoreEnabled;
     }
 
-    public void setHistoricalTraceEnabled(boolean historicalTraceEnabled) {
-        this.historicalTraceEnabled = historicalTraceEnabled;
+    public void setTraceStoreEnabled(boolean traceStoreEnabled) {
+        this.traceStoreEnabled = traceStoreEnabled;
     }
 
-    public Integer getHistoricalTraceStoreSize() {
-        return historicalTraceStoreSize;
+    public Integer getTraceStoreSize() {
+        return traceStoreSize;
     }
 
-    public void setHistoricalTraceStoreSize(Integer historicalTraceStoreSize) {
-        this.historicalTraceStoreSize = historicalTraceStoreSize;
+    public void setTraceStoreSize(Integer traceStoreSize) {
+        this.traceStoreSize = traceStoreSize;
     }
 
-    public Long getHistoricalTraceTimeout() {
-        return historicalTraceTimeout;
+    public Long getTraceStoreTimeout() {
+        return traceStoreTimeout;
     }
 
-    public void setHistoricalTraceTimeout(Long historicalTraceTimeout) {
-        this.historicalTraceTimeout = historicalTraceTimeout;
+    public void setTraceStoreTimeout(Long traceStoreTimeout) {
+        this.traceStoreTimeout = traceStoreTimeout;
     }
 
     public Map<NotifierType, NotifierExecutionOptions> getNotifierExecutionOptionsList() {
@@ -161,9 +161,9 @@ public class RequestTracingExecutionOptions {
                 + ", thresholdUnit=" + thresholdUnit
                 + ", sampleRate=" + sampleRate
                 + ", reservoirSamplingEnabled=" + reservoirSamplingEnabled
-                + ", historicalTraceEnabled=" + historicalTraceEnabled
-                + ", historicalTraceStoreSize=" + historicalTraceStoreSize
-                + ", historicalTraceTimeout=" + historicalTraceTimeout
+                + ", traceStoreEnabled=" + traceStoreEnabled
+                + ", traceStoreSize=" + traceStoreSize
+                + ", traceTimeout=" + traceStoreTimeout
                 + ", notifierExecutionOptionsList=" + notifierExecutionOptionsList
                 + '}';
     }

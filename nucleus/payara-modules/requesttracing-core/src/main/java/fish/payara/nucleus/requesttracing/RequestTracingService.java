@@ -127,7 +127,7 @@ public class RequestTracingService implements EventListener, ConfigListener {
     RequestEventStore requestEventStore;
 
     @Inject
-    RequestTraceStore historicRequestTracingEventStore;
+    RequestTraceStore requestTraceStore;
 
     @Inject
     NotificationEventFactoryStore eventFactoryStore;
@@ -138,7 +138,7 @@ public class RequestTracingService implements EventListener, ConfigListener {
     @Inject
     private HazelcastCore hazelcast;
 
-    private ScheduledExecutorService historicCleanerExecutor;
+    private ScheduledExecutorService traceStoreCleanerExecutor;
 
     private RequestTracingExecutionOptions executionOptions = new RequestTracingExecutionOptions();
     
@@ -199,13 +199,13 @@ public class RequestTracingService implements EventListener, ConfigListener {
             executionOptions.setReservoirSamplingEnabled(Boolean.parseBoolean(configuration.getReservoirSamplingEnabled()));
             executionOptions.setThresholdUnit(TimeUnit.valueOf(configuration.getThresholdUnit()));
             executionOptions.setThresholdValue(Long.parseLong(configuration.getThresholdValue()));
-            executionOptions.setHistoricalTraceEnabled(Boolean.parseBoolean(configuration.getHistoricalTraceEnabled()));
-            executionOptions.setHistoricalTraceStoreSize(Integer.parseInt(configuration.getHistoricalTraceStoreSize()));
-            executionOptions.setHistoricalTraceTimeout(TimeUtil.setStoreTimeLimit(configuration.getHistoricalTraceStoreTimeout()));
+            executionOptions.setTraceStoreEnabled(Boolean.parseBoolean(configuration.getTraceStoreEnabled()));
+            executionOptions.setTraceStoreSize(Integer.parseInt(configuration.getTraceStoreSize()));
+            executionOptions.setTraceStoreTimeout(TimeUtil.setStoreTimeLimit(configuration.getTraceStoreTimeout()));
 
-            historicCleanerExecutor = Executors.newScheduledThreadPool(1,  new ThreadFactory() {
+            traceStoreCleanerExecutor = Executors.newScheduledThreadPool(1,  new ThreadFactory() {
                 public Thread newThread(Runnable r) {
-                    return new Thread(r, "request-tracing-historic-trace-store-cleanup-task");
+                    return new Thread(r, "request-trace-store-cleanup-task");
                 }
             });
 
@@ -213,17 +213,17 @@ public class RequestTracingService implements EventListener, ConfigListener {
         }
 
         if (executionOptions != null && executionOptions.isEnabled()) {
-            if (executionOptions.isHistoricalTraceEnabled()) {
-                historicRequestTracingEventStore.initialize(executionOptions.getHistoricalTraceStoreSize(), executionOptions.getReservoirSamplingEnabled());
+            if (executionOptions.isTraceStoreEnabled()) {
+                requestTraceStore.initialize(executionOptions.getTraceStoreSize(), executionOptions.getReservoirSamplingEnabled());
 
                 // Disable cleanup task if it's null, less than 0, or reservoir sampling is enabled
-                if (executionOptions.getHistoricalTraceTimeout() != null && executionOptions.getHistoricalTraceTimeout() > 0 && !executionOptions.getReservoirSamplingEnabled()) {
+                if (executionOptions.getTraceStoreTimeout() != null && executionOptions.getTraceStoreTimeout() > 0 && !executionOptions.getReservoirSamplingEnabled()) {
                     // if timeout is bigger than 5 minutes execute the cleaner task in 5 minutes periods,
                     // if not use timeout value as period
-                    long period = executionOptions.getHistoricalTraceTimeout() > TimeUtil.CLEANUP_TASK_FIVE_MIN_PERIOD
-                            ? TimeUtil.CLEANUP_TASK_FIVE_MIN_PERIOD : executionOptions.getHistoricalTraceTimeout();
-                    historicCleanerExecutor.scheduleAtFixedRate(
-                            new RequestTraceStoreCleanupTask(executionOptions.getHistoricalTraceTimeout()), 0, period, TimeUnit.SECONDS);
+                    long period = executionOptions.getTraceStoreTimeout() > TimeUtil.CLEANUP_TASK_FIVE_MIN_PERIOD
+                            ? TimeUtil.CLEANUP_TASK_FIVE_MIN_PERIOD : executionOptions.getTraceStoreTimeout();
+                    traceStoreCleanerExecutor.scheduleAtFixedRate(
+                            new RequestTraceStoreCleanupTask(executionOptions.getTraceStoreTimeout()), 0, period, TimeUnit.SECONDS);
                 }
 
             }
@@ -231,9 +231,9 @@ public class RequestTracingService implements EventListener, ConfigListener {
             logger.info("Payara Request Tracing Service Started with configuration: " + executionOptions);
         }
         else {
-            if (historicCleanerExecutor != null) {
-                historicCleanerExecutor.shutdownNow();
-                historicCleanerExecutor = null;
+            if (traceStoreCleanerExecutor != null) {
+                traceStoreCleanerExecutor.shutdownNow();
+                traceStoreCleanerExecutor = null;
             }
         }
     }
@@ -317,9 +317,9 @@ public class RequestTracingService implements EventListener, ConfigListener {
         if (elapsedTimeInNanos - thresholdValueInNanos > 0) {
             String traceAsString = requestEventStore.getTraceAsString();
 
-            // Store the trace to the historical event store if it's enabled
-            if (executionOptions.isHistoricalTraceEnabled()) {
-                historicRequestTracingEventStore.addTrace(elapsedTime, requestEventStore.getTrace());
+            // Store the trace to the trace store if it's enabled
+            if (executionOptions.isTraceStoreEnabled()) {
+                requestTraceStore.addTrace(elapsedTime, requestEventStore.getTrace());
             }
 
             for (NotifierExecutionOptions notifierExecutionOptions : getExecutionOptions().getNotifierExecutionOptionsList().values()) {

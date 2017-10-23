@@ -87,17 +87,17 @@ public interface RequestTracingServiceConfiguration extends ConfigBeanProxy, Con
     void setThresholdUnit(String value) throws PropertyVetoException;
 
     @Attribute(defaultValue = "false", dataType = Boolean.class)
-    String getHistoricalTraceEnabled();
-    void setHistoricalTraceEnabled(String value) throws PropertyVetoException;
+    String getTraceStoreEnabled();
+    void setTraceStoreEnabled(String value) throws PropertyVetoException;
 
     @Attribute(defaultValue = "20", dataType = Integer.class)
-    @Min(value = 0, message = "Historical trace store size must be greater than or equal to 0")
-    String getHistoricalTraceStoreSize();
-    void setHistoricalTraceStoreSize(String value) throws PropertyVetoException;
+    @Min(value = 0, message = "Trace store size must be greater than or equal to 0")
+    String getTraceStoreSize();
+    void setTraceStoreSize(String value) throws PropertyVetoException;
 
     @Attribute
-    String getHistoricalTraceStoreTimeout();
-    void setHistoricalTraceStoreTimeout(String value) throws PropertyVetoException;
+    String getTraceStoreTimeout();
+    void setTraceStoreTimeout(String value) throws PropertyVetoException;
 
     @Element("*")
     List<Notifier> getNotifierList();

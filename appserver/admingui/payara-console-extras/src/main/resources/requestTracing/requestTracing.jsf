@@ -55,8 +55,8 @@
         method="GET" result="#{requestScope.resp}");
         setPageSessionAttribute(key="valueMap", value="#{requestScope.resp.data.extraProperties.requestTracingConfiguration}");
         mapPut(map="#{pageSession.valueMap}" key="target" value="#{pageSession.configName}");
-        setPageSessionAttribute(key="convertToFalseList", value={"enabled", "reservoirSamplingEnabled", "applicationsOnlyEnabled", "dynamic", "historicalTraceEnabled"});
-        py.getRequestTracingMessages(parentEndpoint="#{sessionScope.REQUEST_TRACING_CONFIG_URL}", result="#{requestScope.historic}");
+        setPageSessionAttribute(key="convertToFalseList", value={"enabled", "reservoirSamplingEnabled", "applicationsOnlyEnabled", "dynamic", "traceStoreEnabled"});
+        py.getRequestTracingMessages(parentEndpoint="#{sessionScope.REQUEST_TRACING_CONFIG_URL}", result="#{requestScope.traces}");
         if (#{pageSession.valueMap['enabled']}=true) {
             setPageSessionAttribute(key="enabledSelected", value="true");
         }
@@ -66,8 +66,8 @@
         if (#{pageSession.valueMap['applicationsOnlyEnabled']}=true) {
             setPageSessionAttribute(key="applicationsOnlyEnabledSelected", value="true");
         }
-        if (#{pageSession.valueMap['historicalTraceEnabled']}=true) {
-            setPageSessionAttribute(key="historicalTraceEnabled", value="true");
+        if (#{pageSession.valueMap['traceStoreEnabled']}=true) {
+            setPageSessionAttribute(key="traceStoreEnabled", value="true");
         }
 
         setPageSessionAttribute(key="dynamic", value="true");
@@ -95,8 +95,7 @@
                     mapPut(map="#{pageSession.valueMap}" key="reservoirSamplingEnabled" value="#{pageSession.reservoirSamplingEnabledSelected}");
                     mapPut(map="#{pageSession.valueMap}" key="applicationsOnlyEnabled" value="#{pageSession.applicationsOnlyEnabledSelected}");
                     mapPut(map="#{pageSession.valueMap}" key="dynamic" value="#{pageSession.dynamic}");
-                    mapPut(map="#{pageSession.valueMap}" key="historicalTraceEnabled"
-                    value="#{pageSession.historicalTraceEnabled}");
+                    mapPut(map="#{pageSession.valueMap}" key="traceStoreEnabled" value="#{pageSession.traceStoreEnabled}");
                     prepareSuccessfulMsg();
                     gf.updateEntity(endpoint="#{sessionScope.REQUEST_TRACING_CONFIG_URL}/set-requesttracing-configuration" attrs="#{pageSession.valueMap}" convertToFalse="#{pageSession.convertToFalseList}");
                     py.updateNotifiers(endpoint="#{sessionScope.REQUEST_TRACING_CONFIG_URL}" dynamic="#{pageSession.dynamic}" selected="#{pageSession.enabledNotifiersArr}" notifiers="#{pageSession.allNotifiersArray}");
@@ -132,27 +131,26 @@
         </sun:property>
     </sun:propertySheetSection>
 
-    <sun:propertySheetSection id="historicalRequestTracing">
-        <sun:property id="historicalTraceEnabledProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}" 
-                      label="$resource{i18nrt.requestTracing.configuration.historicalTraceEnabledLabel}"  
-                      helpText="$resource{i18nrt.requestTracing.configuration.historicalTraceEnabledLabelHelpText}">
-            <sun:checkbox id="historicalTraceEnabledBox" selected="#{pageSession.historicalTraceEnabled}" 
-                          selectedValue="true" />
+    <sun:propertySheetSection id="traceStore">
+        <sun:property id="traceStoreEnabledProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}" 
+                      label="$resource{i18nrt.requestTracing.configuration.traceStoreEnabledLabel}"  
+                      helpText="$resource{i18nrt.requestTracing.configuration.traceStoreEnabledLabelHelpText}">
+            <sun:checkbox id="traceStoreEnabledBox" selected="#{pageSession.traceStoreEnabled}" selectedValue="true" />
         </sun:property>
         <sun:property id="reservoirSamplingEnabledProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}" label="$resource{i18nrt.requestTracing.configuration.reservoirSamplingEnabled}"  helpText="$resource{i18nrt.requestTracing.configuration.reservoirSamplingEnabledHelp}">
             <sun:checkbox id="reservoirSamplingEnabledProp" label="$resource{i18n.common.Enabled}" selected="#{pageSession.reservoirSamplingEnabledSelected}" selectedValue="true" />
         </sun:property>
-        <sun:property id="historicalTraceStoreSizeProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}" 
-                      label="$resource{i18nrt.requestTracing.configuration.historicalTraceStoreSizeLabel}"  
-                      helpText="$resource{i18nrt.requestTracing.configuration.historicalTraceStoreSizeLabelHelpText}">
-            <sun:textField id="historicalTraceStoreSizeField" columns="$int{40}"  styleClass="integer" maxLength="30" 
-                           text="#{pageSession.valueMap['historicalTraceStoreSize']}" />
+        <sun:property id="traceStoreSizeProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}" 
+                      label="$resource{i18nrt.requestTracing.configuration.traceStoreSizeLabel}"  
+                      helpText="$resource{i18nrt.requestTracing.configuration.traceStoreSizeLabelHelpText}">
+            <sun:textField id="traceStoreSizeField" columns="$int{40}"  styleClass="integer" maxLength="30" 
+                           text="#{pageSession.valueMap['traceStoreSize']}" />
         </sun:property>
-        <sun:property id="historicalTraceStoreTimeoutProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}"
-                      label="$resource{i18nrt.requestTracing.configuration.historicalTraceStoreTimeoutLabel}"
-                      helpText="$resource{i18nrt.requestTracing.configuration.historicalTraceStoreTimeoutLabelHelpText}">
-            <sun:textField id="historicalTraceStoreTimeoutField" columns="$int{40}" maxLength="250"
-                           text="#{pageSession.valueMap['historicalTraceStoreTimeout']}"/>
+        <sun:property id="traceStoreTimeoutProp" labelAlign="left" noWrap="#{true}" overlapLabel="#{false}"
+                      label="$resource{i18nrt.requestTracing.configuration.traceStoreTimeoutLabel}"
+                      helpText="$resource{i18nrt.requestTracing.configuration.traceStoreTimeoutLabelHelpText}">
+            <sun:textField id="traceStoreTimeoutField" columns="$int{40}" maxLength="250"
+                           text="#{pageSession.valueMap['traceStoreTimeout']}"/>
         </sun:property>
     </sun:propertySheetSection>
 
@@ -169,15 +167,15 @@
         </sun:property>
     </sun:propertySheetSection>
 
-    <sun:propertySheetSection id="historic">
+    <sun:propertySheetSection id="traces">
         <sun:property>
-            <sun:table id="historicRequestTracingTable" title="$resource{i18nrt.requestTracing.historic.table.name}" >
-                <sun:tableRowGroup id="historicRequestTracingRowGroup" data={"$attribute{historic}"} sourceVar="td"
-                                   emptyDataMsg="$resource{i18nrt.requestTracing.historic.table.empty}">
-                    <sun:tableColumn header="$resource{i18nrt.requestTracing.historic.table.headings.elapsedTime}" sort="elapsedTime" rowHeader="$boolean{true}" id="col1">
+            <sun:table id="tracesTable" title="$resource{i18nrt.requestTracing.traceStore.table.name}" >
+                <sun:tableRowGroup id="traceStoreRowGroup" data={"$attribute{traces}"} sourceVar="td"
+                                   emptyDataMsg="$resource{i18nrt.requestTracing.traceStore.table.empty}">
+                    <sun:tableColumn header="$resource{i18nrt.requestTracing.traceStore.table.headings.elapsedTime}" sort="elapsedTime" rowHeader="$boolean{true}" id="col1">
                         <staticText id="elapsedTime" value="#{td.value.elapsedTime}" />
                     </sun:tableColumn>
-                    <sun:tableColumn header="$resource{i18nrt.requestTracing.historic.table.headings.message}" sort="message" rowHeader="$boolean{true}" id="col2">
+                    <sun:tableColumn header="$resource{i18nrt.requestTracing.traceStore.table.headings.message}" sort="message" rowHeader="$boolean{true}" id="col2">
                         <staticText id="message" value="#{td.value.message}" />
                     </sun:tableColumn>
                 </sun:tableRowGroup>

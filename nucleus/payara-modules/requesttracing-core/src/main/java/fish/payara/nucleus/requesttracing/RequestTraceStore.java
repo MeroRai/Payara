@@ -45,7 +45,6 @@ import fish.payara.nucleus.store.ClusteredStore;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.Random;
@@ -55,7 +54,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Stores historic request traces with descending elapsed time. Comparator is implemented on {@link HistoricRequestTracingEvent}
+ * Stores request traces with descending elapsed time. Comparator is implemented on {@link RequestTrace}
  *
  * @author mertcaliskan
  */

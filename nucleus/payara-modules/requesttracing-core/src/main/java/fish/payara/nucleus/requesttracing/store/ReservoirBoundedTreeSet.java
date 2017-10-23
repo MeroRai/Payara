@@ -99,7 +99,7 @@ public class ReservoirBoundedTreeSet<N extends Comparable> extends BoundedTreeSe
                 return super.add(n);
             }
         }
-        throw new IndexOutOfBoundsException("Error in adding to " + getClass().getName() + " in Request Tracing historical store. "
+        throw new IndexOutOfBoundsException("Error in adding to " + getClass().getName() + " in Request Trace store. "
                 + "A problem occurred in the reservoir sampling algorithm.");
     }
 }

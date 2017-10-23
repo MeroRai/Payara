@@ -120,14 +120,14 @@ public class SetRequestTracingConfiguration implements AdminCommand {
     @Param(name = "thresholdValue", optional = true)
     private String value;
 
-    @Param(name = "historicalTraceEnabled", optional = true)
-    private Boolean historicalTraceEnabled;
+    @Param(name = "traceStoreEnabled", optional = true)
+    private Boolean traceStoreEnabled;
 
-    @Param(name = "historicalTraceStoreSize", optional = true)
-    private Integer historicalTraceStoreSize;
+    @Param(name = "traceStoreSize", optional = true)
+    private Integer traceStoreSize;
 
-    @Param(name = "historicalTraceStoreTimeout", optional = true)
-    private String historicalTraceStoreTimeout;
+    @Param(name = "traceStoreTimeout", optional = true)
+    private String traceStoreTimeout;
 
     @Override
     public void execute(AdminCommandContext context) {
@@ -165,14 +165,14 @@ public class SetRequestTracingConfiguration implements AdminCommand {
                         if (value != null) {
                             requestTracingServiceConfigurationProxy.setThresholdValue(value);
                         }
-                        if (historicalTraceEnabled != null) {
-                            requestTracingServiceConfigurationProxy.setHistoricalTraceEnabled(historicalTraceEnabled.toString());
+                        if (traceStoreEnabled != null) {
+                            requestTracingServiceConfigurationProxy.setTraceStoreEnabled(traceStoreEnabled.toString());
                         }
-                        if (historicalTraceStoreSize != null) {
-                            requestTracingServiceConfigurationProxy.setHistoricalTraceStoreSize(historicalTraceStoreSize.toString());
+                        if (traceStoreSize != null) {
+                            requestTracingServiceConfigurationProxy.setTraceStoreSize(traceStoreSize.toString());
                         }
-                        if (historicalTraceStoreTimeout != null) {
-                            requestTracingServiceConfigurationProxy.setHistoricalTraceStoreTimeout(historicalTraceStoreTimeout.toString());
+                        if (traceStoreTimeout != null) {
+                            requestTracingServiceConfigurationProxy.setTraceStoreTimeout(traceStoreTimeout.toString());
                         }
 
                         actionReport.setActionExitCode(ActionReport.ExitCode.SUCCESS);
@@ -224,22 +224,22 @@ public class SetRequestTracingConfiguration implements AdminCommand {
                     "Request Tracing Service Threshold Unit is set to {0}.", unit) + "\n");
         }
 
-        if (historicalTraceEnabled != null) {
-            service.getExecutionOptions().setHistoricalTraceEnabled(historicalTraceEnabled);
-            actionReport.appendMessage(strings.getLocalString("requesttracing.configure.historicaltrace.status.success",
-                    "Request Tracing Historical Trace status is set to {0}.", historicalTraceEnabled) + "\n");
+        if (traceStoreEnabled != null) {
+            service.getExecutionOptions().setTraceStoreEnabled(traceStoreEnabled);
+            actionReport.appendMessage(strings.getLocalString("requesttracing.configure.store.status.success",
+                    "Request Trace Store status is set to {0}.", traceStoreEnabled) + "\n");
         }
 
-        if (historicalTraceStoreSize != null) {
-            service.getExecutionOptions().setHistoricalTraceStoreSize(historicalTraceStoreSize);
-            actionReport.appendMessage(strings.getLocalString("requesttracing.configure.historicaltrace.storesize.success",
-                    "Request Tracing Historical Trace Store Size is set to {0}.", historicalTraceStoreSize) + "\n");
+        if (traceStoreSize != null) {
+            service.getExecutionOptions().setTraceStoreSize(traceStoreSize);
+            actionReport.appendMessage(strings.getLocalString("requesttracing.configure.store.size.success",
+                    "Request Trace Store Size is set to {0}.", traceStoreSize) + "\n");
         }
 
-        if (historicalTraceStoreTimeout != null) {
-            service.getExecutionOptions().setHistoricalTraceTimeout(TimeUtil.setStoreTimeLimit(historicalTraceStoreTimeout));
-            actionReport.appendMessage(strings.getLocalString("requesttracing.configure.historicaltrace.timeout.success",
-                    "Request Tracing Historical Trace Store Timeout is set to {0}.", historicalTraceStoreTimeout) + "\n");
+        if (traceStoreTimeout != null) {
+            service.getExecutionOptions().setTraceStoreTimeout(TimeUtil.setStoreTimeLimit(traceStoreTimeout));
+            actionReport.appendMessage(strings.getLocalString("requesttracing.configure.store.timeout.success",
+                    "Request Trace Store Timeout is set to {0}.", traceStoreTimeout) + "\n");
         }
 
         service.bootstrapRequestTracingService();

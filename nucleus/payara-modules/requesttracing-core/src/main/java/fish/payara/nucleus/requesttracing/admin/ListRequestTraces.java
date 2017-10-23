@@ -99,8 +99,8 @@ public class ListRequestTraces implements AdminCommand {
         final ActionReport actionReport = context.getActionReport();
 
         RequestTracingExecutionOptions executionOptions = service.getExecutionOptions();
-        if (!executionOptions.isHistoricalTraceEnabled()) {
-            actionReport.setMessage("Request Tracing Historical Trace is not enabled!");
+        if (!executionOptions.isTraceStoreEnabled()) {
+            actionReport.setMessage("Request Trace Store is not enabled!");
             actionReport.setActionExitCode(ActionReport.ExitCode.SUCCESS);
         }
         else {
@@ -119,7 +119,7 @@ public class ListRequestTraces implements AdminCommand {
         RequestTracingExecutionOptions executionOptions = service.getExecutionOptions();
 
         if (first == null) {
-            first = executionOptions.getHistoricalTraceStoreSize();
+            first = executionOptions.getTraceStoreSize();
         }
         ColumnFormatter columnFormatter = new ColumnFormatter(headers);
         Properties extrasProps = new Properties();
@@ -140,7 +140,7 @@ public class ListRequestTraces implements AdminCommand {
         }
 
         actionReport.setMessage(columnFormatter.toString());
-        extrasProps.put("historicmessages", tracesList);
+        extrasProps.put("traces", tracesList);
         actionReport.setExtraProperties(extrasProps);
 
         actionReport.setActionExitCode(ActionReport.ExitCode.SUCCESS);

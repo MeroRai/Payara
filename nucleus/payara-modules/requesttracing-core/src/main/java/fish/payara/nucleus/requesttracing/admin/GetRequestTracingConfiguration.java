@@ -119,18 +119,18 @@ public class GetRequestTracingConfiguration implements AdminCommand {
         mainActionReport.appendMessage("Request Tracing Applications Only?: " + configuration.getApplicationsOnlyEnabled() + "\n");
         
         if (Boolean.parseBoolean(configuration.getEnabled())) {
-            mainActionReport.appendMessage("Historical Tracing Enabled?: " + configuration.getHistoricalTraceEnabled() 
+            mainActionReport.appendMessage("Trace Store Enabled?: " + configuration.getTraceStoreEnabled() 
                     + "\n");
-            if (Boolean.parseBoolean(configuration.getHistoricalTraceEnabled())) {
+            if (Boolean.parseBoolean(configuration.getTraceStoreEnabled())) {
                 mainActionReport.appendMessage("Reservoir Sampling enabled?: " + configuration.getReservoirSamplingEnabled()+ "\n");
             }
-            if (Boolean.parseBoolean(configuration.getHistoricalTraceEnabled())) {
-                mainActionReport.appendMessage("Historical Tracing Store Size: " 
-                        + configuration.getHistoricalTraceStoreSize() + "\n");
+            if (Boolean.parseBoolean(configuration.getTraceStoreEnabled())) {
+                mainActionReport.appendMessage("Trace Store Size: " 
+                        + configuration.getTraceStoreSize() + "\n");
             }
-            if (!Strings.isNullOrEmpty(configuration.getHistoricalTraceStoreTimeout())) {
-                mainActionReport.appendMessage("Historical Tracing Store Timeout in Seconds: "
-                        + configuration.getHistoricalTraceStoreTimeout() + "\n");
+            if (!Strings.isNullOrEmpty(configuration.getTraceStoreTimeout())) {
+                mainActionReport.appendMessage("Trace Store Timeout in Seconds: "
+                        + configuration.getTraceStoreTimeout() + "\n");
             }
         }
         
@@ -139,9 +139,9 @@ public class GetRequestTracingConfiguration implements AdminCommand {
         Map<String, Object> mainExtraPropsMap = new HashMap<>();
         
         mainExtraPropsMap.put("enabled", configuration.getEnabled());
-        mainExtraPropsMap.put("historicalTraceEnabled", configuration.getHistoricalTraceEnabled());
-        mainExtraPropsMap.put("historicalTraceStoreSize", configuration.getHistoricalTraceStoreSize());
-        mainExtraPropsMap.put("historicalTraceStoreTimeout", configuration.getHistoricalTraceStoreTimeout());
+        mainExtraPropsMap.put("traceStoreEnabled", configuration.getTraceStoreEnabled());
+        mainExtraPropsMap.put("traceStoreSize", configuration.getTraceStoreSize());
+        mainExtraPropsMap.put("traceStoreTimeout", configuration.getTraceStoreTimeout());
         mainExtraPropsMap.put("sampleRate", configuration.getSampleRate());
         mainExtraPropsMap.put("applicationsOnlyEnabled", configuration.getApplicationsOnlyEnabled());
         mainExtraPropsMap.put("reservoirSamplingEnabled", configuration.getReservoirSamplingEnabled());
