@@ -123,9 +123,12 @@ public class RequestTrace implements Serializable, Comparable<RequestTrace> {
     public String toString() {
         StringBuilder sb = new StringBuilder("{\"RequestTrace\": {");
         sb.append("\"startTime\":\"").append(DateFormat.getDateTimeInstance().format(new Date(startTimeEpoched))).append('"')
-          .append(",\"elapsedTime\":\"").append(elapsedTime).append('"').append(',');
+                .append(",\"elapsedTime\":\"").append(elapsedTime).append('"').append(',');
+        int traceNumber = 0;
         for (RequestEvent re : trace) {
-            sb.append(re.toString()); 
+            traceNumber++;
+            re.setTraceNumber(traceNumber);
+            sb.append(re.toString());
             if (re.getEventType() != EventType.TRACE_END) {
                 sb.append(',');
             }

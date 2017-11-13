@@ -60,6 +60,8 @@ public class RequestEvent implements Serializable {
     private final EventType eventType;
     private HashMap<String,String> properties;
     private String eventName;
+    private int traceNumber;
+    
 
     public RequestEvent(String eventName) {
         this(EventType.REQUEST_EVENT,eventName);
@@ -142,11 +144,21 @@ public class RequestEvent implements Serializable {
         }
         properties.put(name, value);
     }
+
+    public int getTraceNumber() {
+        return traceNumber;
+    }
+
+    public void setTraceNumber(int traceNumber) {
+        this.traceNumber = traceNumber;
+    }
+    
+    
     
     @Override
     public String toString() {
         
-        StringBuilder result = new StringBuilder("\n\"TraceEvent\": {");
+        StringBuilder result = new StringBuilder("\n\"TraceEvent" + traceNumber + "\": {");
         result.append("\"eventType\": \"").append(eventType).append("\",")
                 .append("\"eventName\":\"").append(eventName).append("\",")
                 .append("\"id=\":\"").append(id).append("\",")
