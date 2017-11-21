@@ -523,7 +523,7 @@ public class PayaraRestApiHandlers
         if (data != null) {
             Map extraProperties = (Map) data.get("extraProperties");
             if (extraProperties != null) {
-                messages = (List<Map>) extraProperties.get("historicmessages");
+                messages = (List<Map>) extraProperties.get("traces");
                 if (messages != null)
                 if (messages == null) {
                     // Re-initialise to empty if members is not found

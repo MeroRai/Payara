@@ -1,0 +1,77 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package fish.payara.cloud.trace.admin;
+
+import com.sun.enterprise.config.serverbeans.Domain;
+import fish.payara.cloud.trace.config.CloudTraceConfiguration;
+import java.beans.PropertyVetoException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.inject.Inject;
+import org.glassfish.api.I18n;
+import org.glassfish.api.admin.AdminCommand;
+import org.glassfish.api.admin.AdminCommandContext;
+import org.glassfish.api.admin.CommandLock;
+import org.glassfish.api.admin.ExecuteOn;
+import org.glassfish.api.admin.RestEndpoint;
+import org.glassfish.api.admin.RestEndpoints;
+import org.glassfish.api.admin.RuntimeType;
+import org.glassfish.config.support.CommandTarget;
+import org.glassfish.config.support.TargetType;
+import org.glassfish.hk2.api.PerLookup;
+import org.jvnet.hk2.annotations.Service;
+import org.jvnet.hk2.config.ConfigSupport;
+import org.jvnet.hk2.config.SingleConfigCode;
+import org.jvnet.hk2.config.TransactionFailure;
+
+/**
+ *
+ * @author susan
+ */
+@Service(name = "disable-cloud-trace")
+@PerLookup
+@CommandLock(CommandLock.LockType.NONE)
+@I18n("disable.cloud.trace")
+@ExecuteOn({RuntimeType.DAS, RuntimeType.INSTANCE})
+@TargetType(value = {CommandTarget.DAS, CommandTarget.STANDALONE_INSTANCE, CommandTarget.CLUSTER, CommandTarget.CLUSTERED_INSTANCE, CommandTarget.CONFIG})
+@RestEndpoints({
+    @RestEndpoint(configBean = Domain.class,
+            opType = RestEndpoint.OpType.POST,
+            path = "disable-cloud-trace",
+            description = "Disables the cloud trace service")
+})
+public class DisableCloudTrace implements AdminCommand {
+
+    @Inject
+    CloudTraceConfiguration cloudTraceConfiguration;
+
+    @Override
+    public void execute(AdminCommandContext acc) {
+        try {
+            ConfigSupport.apply(new SingleConfigCode<CloudTraceConfiguration>() {
+                public Object run(CloudTraceConfiguration cloudTraceConfigurationProxy)
+                        throws PropertyVetoException, TransactionFailure {
+
+                    if (Boolean.parseBoolean(cloudTraceConfiguration.getEnabled())) {
+                        cloudTraceConfigurationProxy.setEnabled(false);
+                        Logger.getLogger(DisableCloudTrace.class.getName())
+                                .log(Level.INFO,
+                                        "Cloud Trace Service is disabled");
+                    } else {
+                        Logger.getLogger(DisableCloudTrace.class.getName())
+                                .log(Level.INFO,
+                                        "Cloud Trace Service is already disabled");
+                    }
+
+                    return null;
+                }
+            }, cloudTraceConfiguration);
+        } catch (TransactionFailure ex) {
+            Logger.getLogger(DisableCloudTrace.class.getName()).
+                    log(Level.SEVERE, null, ex);
+        }
+    }
+}

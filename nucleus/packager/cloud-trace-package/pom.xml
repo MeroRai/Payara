@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.glassfish.main.packager</groupId>
+        <artifactId>nucleus-packages</artifactId>
+        <version>5.0.0.Alpha2-SNAPSHOT</version>
+    </parent>
+    <groupId>fish.payara.packager</groupId>
+    <artifactId>cloud-trace-package</artifactId>
+    <name>Nucleus Cloud Trace Package</name>
+    <packaging>distribution-fragment</packaging> 
+    <description>This pom describes how to assemble the Nucleus Payara Cloud Trace package</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>fish.payara.payara-modules</groupId>
+            <artifactId>cloud-trace</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+</project>

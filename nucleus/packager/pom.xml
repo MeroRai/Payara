@@ -114,6 +114,7 @@
         <module>asadmin-recorder-package</module>
         <module>notification-package</module>
         <module>payara-api-package</module>
+        <module>cloud-trace-package</module>
     </modules>
 
     <build>
