@@ -5,6 +5,10 @@
  */
 package fish.payara.cloud.trace;
 
+import com.hazelcast.config.Config;
+import com.hazelcast.config.SemaphoreConfig;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.ISemaphore;
 import fish.payara.appserver.micro.services.PayaraInstanceImpl;
 import fish.payara.cloud.trace.config.CloudTraceConfiguration;
 import fish.payara.nucleus.hazelcast.HazelcastCore;
@@ -16,11 +20,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -35,7 +36,10 @@ import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.runlevel.RunLevel;
 import org.jvnet.hk2.annotations.Service;
 import fish.payara.micro.data.InstanceDescriptor;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Random;
 
 /**
  *
@@ -49,6 +53,12 @@ public class CloudTraceService implements EventListener {
     //private static final String CLOUD_ENDPOINT_URL = "http://httpbin.org/post";
     private StringBuilder sb;
     private boolean enabled;
+    private boolean dasInCluster = false;
+    //private HashMap<String, String> payaraClusterInfo;
+    private String instanceID = "";
+    private String newInstanceID;
+    private HazelcastInstance hazelcastInstance;
+    private ISemaphore semaphore;
 
     @Inject
     @Named(ServerEnvironment.DEFAULT_INSTANCE_NAME)
@@ -68,9 +78,6 @@ public class CloudTraceService implements EventListener {
 
     @Inject
     ServiceLocator habitat;
-
-    private HashMap<String, String> payaraClusterInfo;
-    private String instanceID;
 
     @PostConstruct
     public void bootService() {
@@ -97,21 +104,27 @@ public class CloudTraceService implements EventListener {
 
     public void sendTraces() {
         if (hzCore.isEnabled()) {
-            //Check if DAS is in the cluster
-            if (getPayaraCluster().contains("DAS") && !payaraClusterInfo.isEmpty()) {
-                sendToCloudEndpoint(cloudTraceConfiguration.getURL(), getTraces());
-                //System.out.println("Instance id of DAS = " + payaraClusterInfo.get("DAS").toString());
-                //instanceID = payaraClusterInfo.get("DAS").toString();
-            } else if (!instanceID.isEmpty() && checkIfInstanceIsInCluster(instanceID)) {
-                getTraces();
+            HashMap<String, String> payaraClusterInfo = new HashMap<>();
+            payaraClusterInfo = getPayaraCluster();
+            String dasInstanceId = payaraClusterInfo.get("DAS").toString();
+            System.out.println("Instance id at send traces = " + instanceID);
+            System.out.println("Das Instance id at send traces = " + dasInstanceId);
+
+//            if (dasInCluster && instanceID.equals(dasInstanceId)) {
+//                sendToCloudEndpoint(cloudTraceConfiguration.getURL(), getTraces());
+//            } else 
+            System.out.println("Newinstance id in send trace before new  = " + newInstanceID);
+            if (!instanceID.isEmpty() && checkIfInstanceIsInCluster(payaraClusterInfo, instanceID) && instanceID.equals(newInstanceID)) {
+                System.out.println("In Same id ");
                 sendToCloudEndpoint(cloudTraceConfiguration.getURL(), getTraces());
             } else {
-                //Randomly select a member from cluster
-                Random random = new Random();
-                List<String> keys = new ArrayList<String>(payaraClusterInfo.keySet());
-                String randomKey = keys.get(random.nextInt(keys.size()));
-                instanceID = payaraClusterInfo.get(randomKey);
-                sendToCloudEndpoint(cloudTraceConfiguration.getURL(), getTraces());
+                System.out.println("In new instandce id ");
+                selectNewInstanceID();
+                if (newInstanceID != null) {
+                    System.out.println("New Id in send trace = " + newInstanceID);
+                    instanceID = newInstanceID;
+                    sendToCloudEndpoint(cloudTraceConfiguration.getURL(), getTraces());
+                }
             }
         } else {
             System.out.println("Send Local Store ");
@@ -119,36 +132,65 @@ public class CloudTraceService implements EventListener {
         }
     }
 
+    private void selectNewInstanceID() {
+        System.out.println("Conif before = " + hazelcastInstance.getConfig());
+
+        Config config = hazelcastInstance.getConfig();
+        SemaphoreConfig semaphoreConfig = config.getSemaphoreConfig("semaphore");
+        semaphoreConfig.setName("semaphore").setBackupCount(1)
+                .setInitialPermits(1);
+        hazelcastInstance.getConfig().addSemaphoreConfig(semaphoreConfig);
+        semaphore = hazelcastInstance.getSemaphore("semaphore");
+        System.out.println("Conif after= " + hazelcastInstance.getConfig());
+        if (semaphore.tryAcquire()) {
+
+            HashMap<String, String> payaraClusterInfoRandom = new HashMap<>();
+            payaraClusterInfoRandom = getPayaraCluster();
+
+            //Randomly select a member from cluster
+            Random random = new Random();
+            List<String> keys = new ArrayList<String>(payaraClusterInfoRandom.keySet());
+            String randomKey = keys.get(random.nextInt(keys.size()));
+            newInstanceID = payaraClusterInfoRandom.get(randomKey);
+
+            //newInstanceID = hazelcastInstance.getCluster().getMembers();
+            System.out.println("New instance id in selectnew instanceID = " + newInstanceID);
+        }
+
+    }
+
     public String getTraces() {
         sb = new StringBuilder();
-        if (hzCore.isEnabled()) {
-            Set<String> store = requestTraceStore.getClusteredRequestTraceStore().keySet();
-            sb.append("[");
-            int traceNumber = 0;
-            for (String key : store) {
-                traceNumber++;
-                System.out.println("key" + traceNumber + " = " + key);
-                Collection<RequestTrace> trace = requestTraceStore.getClusteredRequestTraceStore().get(key);
-                for (RequestTrace requestTrace : trace) {
+        if (requestTraceStore.getStoreSize() > 0) {
+            if (hzCore.isEnabled()) {
+                Set<String> store = requestTraceStore.getClusteredRequestTraceStore().keySet();
+                sb.append("[");
+                int traceNumber = 0;
+                for (String key : store) {
+                    traceNumber++;
+                    System.out.println("key" + traceNumber + " = " + key);
+                    Collection<RequestTrace> trace = requestTraceStore.getClusteredRequestTraceStore().get(key);
+                    for (RequestTrace requestTrace : trace) {
+                        sb.append(requestTrace.toString().replace("=\"\"", "=\\\"\\\""));
+                        sb.append(",");
+                    }
+                }
+                sb.setLength(sb.length() - 1);
+                sb.append("]");
+            } else {
+                sb.append("[");
+                for (RequestTrace requestTrace : requestTraceStore.getLocalRequestTraceStore()) {
                     sb.append(requestTrace.toString().replace("=\"\"", "=\\\"\\\""));
                     sb.append(",");
                 }
+                sb.setLength(sb.length() - 1);
+                sb.append("]");
             }
-            sb.setLength(sb.length() - 1);
-            sb.append("]");
-        } else {
-            sb.append("[");
-            for (RequestTrace requestTrace : requestTraceStore.getLocalRequestTraceStore()) {
-                sb.append(requestTrace.toString().replace("=\"\"", "=\\\"\\\""));
-                sb.append(",");
-            }
-            sb.setLength(sb.length() - 1);
-            sb.append("]");
         }
         return sb.toString();
     }
 
-    private Boolean checkIfInstanceIsInCluster(String instanceID) {
+    private Boolean checkIfInstanceIsInCluster(HashMap<String, String> payaraClusterInfo, String instanceID) {
         Boolean result = false;
         for (Map.Entry entry : payaraClusterInfo.entrySet()) {
             if (entry.getValue().toString().equals(instanceID)) {
@@ -159,27 +201,29 @@ public class CloudTraceService implements EventListener {
         return result;
     }
 
-    private String getPayaraCluster() {
-        StringBuilder stringBuilder = new StringBuilder();
-        payaraClusterInfo = new HashMap<>();
+    private HashMap<String, String> getPayaraCluster() {
+        HashMap<String, String> payaraClusterInfo = new HashMap<>();
         if (payaraInstance.isClustered()) {
-            //Get the instance descriptors of the cluster members
+            //Get the hazelcastInstance descriptors of the cluster members
             Set<InstanceDescriptor> instances = payaraInstance.getClusteredPayaras();
             for (InstanceDescriptor instance : instances) {
                 String instanceType = instance.getInstanceType();
                 if (instanceType != null) {
+                    if (instanceType.equals("DAS")) {
+                        dasInCluster = true;
+                        instanceID = hzCore.getInstance().getCluster().getLocalMember().getUuid();
+                    }
                     payaraClusterInfo.put(instanceType, instance.getMemberUUID());
                     System.out.println("Member type = " + instanceType + " Instance ID = " + instance.getMemberUUID());
-                    stringBuilder.append(instanceType).append(",");
                 }
             }
         }
-        return stringBuilder.toString();
+        return payaraClusterInfo;
     }
 
     private void sendToCloudEndpoint(String cloudEndpointUrl, String traces) {
         HttpURLConnection connection = null;
-        if (traces != null) {
+        if (traces.length() > 0) {
             try {
                 URL url = new URL(cloudEndpointUrl);
                 connection = (HttpURLConnection) url.openConnection();
@@ -229,8 +273,11 @@ public class CloudTraceService implements EventListener {
     private void bootStarpCloudTraceService() {
 
         if (enabled) {
+            if (hzCore.isEnabled()) {
+                hazelcastInstance = hzCore.getInstance();
+                semaphore = hazelcastInstance.getSemaphore("semaphore");
+            }
             //sendToCloudEndpoint(cloudTraceConfiguration.getURL());
-            System.out.println("Sb length = " + sb.length());
             sendTraces();
             System.out.println("sTARTED");
         }
@@ -239,6 +286,7 @@ public class CloudTraceService implements EventListener {
 
     private void shutDownCloudTraceService() {
         System.out.println("Shutdown");
+        semaphore.release();
     }
 
     public void start() {
