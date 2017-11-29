@@ -1,10 +1,46 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
+ *
+ * Copyright (c) 2017 Payara Foundation and/or its affiliates. All rights reserved.
+ *
+ * The contents of this file are subject to the terms of either the GNU
+ * General Public License Version 2 only ("GPL") or the Common Development
+ * and Distribution License("CDDL") (collectively, the "License").  You
+ * may not use this file except in compliance with the License.  You can
+ * obtain a copy of the License at
+ * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ * When distributing the software, include this License Header Notice in each
+ * file and include the License file at glassfish/legal/LICENSE.txt.
+ *
+ * GPL Classpath Exception:
+ * The Payara Foundation designates this particular file as subject to the "Classpath"
+ * exception as provided by the Payara Foundation in the GPL Version 2 section of the License
+ * file that accompanied this code.
+ *
+ * Modifications:
+ * If applicable, add the following below the License Header, with the fields
+ * enclosed by brackets [] replaced by your own identifying information:
+ * "Portions Copyright [year] [name of copyright owner]"
+ *
+ * Contributor(s):
+ * If you wish your version of this file to be governed by only the CDDL or
+ * only the GPL Version 2, indicate your decision by adding "[Contributor]
+ * elects to include this software in this distribution under the [CDDL or GPL
+ * Version 2] license."  If you don't indicate a single choice of license, a
+ * recipient has the option to distribute your version of this file under
+ * either the CDDL, the GPL Version 2 or to extend the choice of license to
+ * its licensees as provided above.  However, if you add GPL Version 2 code
+ * and therefore, elected the GPL Version 2 license, then the option applies
+ * only if the new code is made subject to such option by the copyright
+ * holder.
  */
 package fish.payara.cloud.trace.config;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.Pattern;
 import org.glassfish.api.admin.config.ConfigExtension;
 import org.jvnet.hk2.config.Attribute;
@@ -17,21 +53,24 @@ import org.jvnet.hk2.config.Configured;
  */
 @Configured
 public interface CloudTraceConfiguration extends ConfigBeanProxy, ConfigExtension {
+    static final String CLOUD_ENDPOINT_URL = "http://httpbin.org/post"; 
 
     @Attribute(defaultValue = "false", dataType = Boolean.class)
     public String getEnabled();
     public void setEnabled(Boolean enabled);
 
-    @Attribute(defaultValue = "HOURS")
-    @Pattern(regexp = "SECONDS|MINUTES|HOURS|DAYS", message = "Invalid time unit. Value must be one of: SECONDS, MINUTES, HOURS, DAYS.")
+    @Attribute(defaultValue = "1", dataType = Integer.class)
+    @Min(value = 0, message = "Frequency value must be greater than 0")
+    @Max(value = Integer.MAX_VALUE, message = "Frequency value must be less than " + Integer.MAX_VALUE)
+    String getFrequencyValue();
+    void setFrequencyValue(String value);
+
+    @Attribute(defaultValue = "MINUTES")
+    @Pattern(regexp = "MINUTES|HOURS|DAYS", message = "Invalid time unit. Value must be one of: MINUTES, HOURS, DAYS.")
     String getFrequencyUnit();
     public void setFrequencyUnit(String value);
 
-    @Attribute(defaultValue = "")
-    String getTraces();
-    public void setTraces(String traces);
-    
-    @Attribute(defaultValue = "http://httpbin.org/post")
-    String getURL();
-    public void setURL(String traces);
+    @Attribute(defaultValue = CLOUD_ENDPOINT_URL)
+    String getCloudEndpointUrl();
+    public void setCloudEndpointUrl(String traces);
 }

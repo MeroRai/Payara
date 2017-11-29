@@ -1,45 +1,64 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
+ *
+ * Copyright (c) 2017 Payara Foundation and/or its affiliates. All rights reserved.
+ *
+ * The contents of this file are subject to the terms of either the GNU
+ * General Public License Version 2 only ("GPL") or the Common Development
+ * and Distribution License("CDDL") (collectively, the "License").  You
+ * may not use this file except in compliance with the License.  You can
+ * obtain a copy of the License at
+ * https://github.com/payara/Payara/blob/master/LICENSE.txt
+ * See the License for the specific
+ * language governing permissions and limitations under the License.
+ *
+ * When distributing the software, include this License Header Notice in each
+ * file and include the License file at glassfish/legal/LICENSE.txt.
+ *
+ * GPL Classpath Exception:
+ * The Payara Foundation designates this particular file as subject to the "Classpath"
+ * exception as provided by the Payara Foundation in the GPL Version 2 section of the License
+ * file that accompanied this code.
+ *
+ * Modifications:
+ * If applicable, add the following below the License Header, with the fields
+ * enclosed by brackets [] replaced by your own identifying information:
+ * "Portions Copyright [year] [name of copyright owner]"
+ *
+ * Contributor(s):
+ * If you wish your version of this file to be governed by only the CDDL or
+ * only the GPL Version 2, indicate your decision by adding "[Contributor]
+ * elects to include this software in this distribution under the [CDDL or GPL
+ * Version 2] license."  If you don't indicate a single choice of license, a
+ * recipient has the option to distribute your version of this file under
+ * either the CDDL, the GPL Version 2 or to extend the choice of license to
+ * its licensees as provided above.  However, if you add GPL Version 2 code
+ * and therefore, elected the GPL Version 2 license, then the option applies
+ * only if the new code is made subject to such option by the copyright
+ * holder.
  */
 package fish.payara.cloud.trace;
 
-import com.hazelcast.config.Config;
-import com.hazelcast.config.SemaphoreConfig;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.ISemaphore;
 import fish.payara.appserver.micro.services.PayaraInstanceImpl;
 import fish.payara.cloud.trace.config.CloudTraceConfiguration;
 import fish.payara.nucleus.hazelcast.HazelcastCore;
-import fish.payara.nucleus.requesttracing.RequestTraceStore;
-import fish.payara.nucleus.requesttracing.RequestTrace;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import javax.inject.Named;
 import org.glassfish.api.StartupRunLevel;
-import org.glassfish.api.admin.ServerEnvironment;
 import org.glassfish.api.event.EventListener;
 import org.glassfish.api.event.Events;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.hk2.runlevel.RunLevel;
 import org.jvnet.hk2.annotations.Service;
-import fish.payara.micro.data.InstanceDescriptor;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
+import fish.payara.nucleus.events.HazelcastEvents;
+import fish.payara.nucleus.requesttracing.RequestTraceStore;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import org.glassfish.api.event.EventTypes;
 
 /**
  *
@@ -50,34 +69,29 @@ import java.util.Random;
 public class CloudTraceService implements EventListener {
 
     private static final Logger logger = Logger.getLogger(CloudTraceService.class.getCanonicalName());
-    //private static final String CLOUD_ENDPOINT_URL = "http://httpbin.org/post";
-    private StringBuilder sb;
+    private static final String THREAD_NAME = "Cloud-trace-service";
     private boolean enabled;
-    private boolean dasInCluster = false;
-    //private HashMap<String, String> payaraClusterInfo;
+    private ScheduledExecutorService executor;
     private String instanceID = "";
-    private String newInstanceID;
-    private HazelcastInstance hazelcastInstance;
-    private ISemaphore semaphore;
+    private String newInstanceID = "";
 
     @Inject
-    @Named(ServerEnvironment.DEFAULT_INSTANCE_NAME)
-    CloudTraceConfiguration cloudTraceConfiguration;
+    private CloudTraceConfiguration cloudTraceConfiguration;
 
     @Inject
-    Events events;
+    private Events events;
 
     @Inject
-    RequestTraceStore requestTraceStore;
+    private HazelcastCore hzCore;
+
+    @Inject
+    private ServiceLocator habitat;
+
+    @Inject
+    private RequestTraceStore requestTraceStore;
 
     @Inject
     private PayaraInstanceImpl payaraInstance;
-
-    @Inject
-    HazelcastCore hzCore;
-
-    @Inject
-    ServiceLocator habitat;
 
     @PostConstruct
     public void bootService() {
@@ -100,193 +114,41 @@ public class CloudTraceService implements EventListener {
 
     @Override
     public void event(Event event) {
-    }
-
-    public void sendTraces() {
+        // If Hazelcast is enabled, wait for it, otherwise just bootstrap when the server is ready
         if (hzCore.isEnabled()) {
-            HashMap<String, String> payaraClusterInfo = new HashMap<>();
-            payaraClusterInfo = getPayaraCluster();
-            String dasInstanceId = payaraClusterInfo.get("DAS").toString();
-            System.out.println("Instance id at send traces = " + instanceID);
-            System.out.println("Das Instance id at send traces = " + dasInstanceId);
-
-//            if (dasInCluster && instanceID.equals(dasInstanceId)) {
-//                sendToCloudEndpoint(cloudTraceConfiguration.getURL(), getTraces());
-//            } else 
-            System.out.println("Newinstance id in send trace before new  = " + newInstanceID);
-            if (!instanceID.isEmpty() && checkIfInstanceIsInCluster(payaraClusterInfo, instanceID) && instanceID.equals(newInstanceID)) {
-                System.out.println("In Same id ");
-                sendToCloudEndpoint(cloudTraceConfiguration.getURL(), getTraces());
-            } else {
-                System.out.println("In new instandce id ");
-                selectNewInstanceID();
-                if (newInstanceID != null) {
-                    System.out.println("New Id in send trace = " + newInstanceID);
-                    instanceID = newInstanceID;
-                    sendToCloudEndpoint(cloudTraceConfiguration.getURL(), getTraces());
-                }
+            if (event.is(HazelcastEvents.HAZELCAST_BOOTSTRAP_COMPLETE)) {
+                bootStarpCloudTraceService();
             }
-        } else {
-            System.out.println("Send Local Store ");
-            sendToCloudEndpoint(cloudTraceConfiguration.getURL(), getTraces());
-        }
-    }
-
-    private void selectNewInstanceID() {
-        System.out.println("Conif before = " + hazelcastInstance.getConfig());
-
-        Config config = hazelcastInstance.getConfig();
-        SemaphoreConfig semaphoreConfig = config.getSemaphoreConfig("semaphore");
-        semaphoreConfig.setName("semaphore").setBackupCount(1)
-                .setInitialPermits(1);
-        hazelcastInstance.getConfig().addSemaphoreConfig(semaphoreConfig);
-        semaphore = hazelcastInstance.getSemaphore("semaphore");
-        System.out.println("Conif after= " + hazelcastInstance.getConfig());
-        if (semaphore.tryAcquire()) {
-
-            HashMap<String, String> payaraClusterInfoRandom = new HashMap<>();
-            payaraClusterInfoRandom = getPayaraCluster();
-
-            //Randomly select a member from cluster
-            Random random = new Random();
-            List<String> keys = new ArrayList<String>(payaraClusterInfoRandom.keySet());
-            String randomKey = keys.get(random.nextInt(keys.size()));
-            newInstanceID = payaraClusterInfoRandom.get(randomKey);
-
-            //newInstanceID = hazelcastInstance.getCluster().getMembers();
-            System.out.println("New instance id in selectnew instanceID = " + newInstanceID);
+        } else if (event.is(EventTypes.SERVER_READY)) {
+            bootStarpCloudTraceService();
+        } else if (event.is(EventTypes.SERVER_SHUTDOWN)) {
+            shutDownCloudTraceService();
         }
 
-    }
-
-    public String getTraces() {
-        sb = new StringBuilder();
-        if (requestTraceStore.getStoreSize() > 0) {
-            if (hzCore.isEnabled()) {
-                Set<String> store = requestTraceStore.getClusteredRequestTraceStore().keySet();
-                sb.append("[");
-                int traceNumber = 0;
-                for (String key : store) {
-                    traceNumber++;
-                    System.out.println("key" + traceNumber + " = " + key);
-                    Collection<RequestTrace> trace = requestTraceStore.getClusteredRequestTraceStore().get(key);
-                    for (RequestTrace requestTrace : trace) {
-                        sb.append(requestTrace.toString().replace("=\"\"", "=\\\"\\\""));
-                        sb.append(",");
-                    }
-                }
-                sb.setLength(sb.length() - 1);
-                sb.append("]");
-            } else {
-                sb.append("[");
-                for (RequestTrace requestTrace : requestTraceStore.getLocalRequestTraceStore()) {
-                    sb.append(requestTrace.toString().replace("=\"\"", "=\\\"\\\""));
-                    sb.append(",");
-                }
-                sb.setLength(sb.length() - 1);
-                sb.append("]");
-            }
-        }
-        return sb.toString();
-    }
-
-    private Boolean checkIfInstanceIsInCluster(HashMap<String, String> payaraClusterInfo, String instanceID) {
-        Boolean result = false;
-        for (Map.Entry entry : payaraClusterInfo.entrySet()) {
-            if (entry.getValue().toString().equals(instanceID)) {
-                result = true;
-                break;
-            }
-        }
-        return result;
-    }
-
-    private HashMap<String, String> getPayaraCluster() {
-        HashMap<String, String> payaraClusterInfo = new HashMap<>();
-        if (payaraInstance.isClustered()) {
-            //Get the hazelcastInstance descriptors of the cluster members
-            Set<InstanceDescriptor> instances = payaraInstance.getClusteredPayaras();
-            for (InstanceDescriptor instance : instances) {
-                String instanceType = instance.getInstanceType();
-                if (instanceType != null) {
-                    if (instanceType.equals("DAS")) {
-                        dasInCluster = true;
-                        instanceID = hzCore.getInstance().getCluster().getLocalMember().getUuid();
-                    }
-                    payaraClusterInfo.put(instanceType, instance.getMemberUUID());
-                    System.out.println("Member type = " + instanceType + " Instance ID = " + instance.getMemberUUID());
-                }
-            }
-        }
-        return payaraClusterInfo;
-    }
-
-    private void sendToCloudEndpoint(String cloudEndpointUrl, String traces) {
-        HttpURLConnection connection = null;
-        if (traces.length() > 0) {
-            try {
-                URL url = new URL(cloudEndpointUrl);
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setDoOutput(true);
-                connection.setRequestMethod("POST");
-                connection.setRequestProperty("Content-Type", "application/json");
-                connection.setRequestProperty("Accept", "application/json");
-                OutputStreamWriter streamWriter = new OutputStreamWriter(connection.getOutputStream());
-                streamWriter.write(traces);
-                streamWriter.flush();
-
-                /* testing */
-                StringBuilder stringBuilder = new StringBuilder();
-                if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                    InputStreamReader streamReader = new InputStreamReader(connection.getInputStream());
-                    BufferedReader bufferedReader = new BufferedReader(streamReader);
-                    String response = null;
-                    while ((response = bufferedReader.readLine()) != null) {
-                        stringBuilder.append(response + "\n");
-                    }
-                    bufferedReader.close();
-                    System.out.println("Cloud Enpoint reponseeeeee =" + stringBuilder.toString());
-                    //return stringBuilder.toString();
-                } else {
-                    System.out.println("testsdsadas =" + connection.getResponseMessage());
-                    //Log.e("test", connection.getResponseMessage());
-                    //return null;
-                }
-
-                /* End Of test */
-            } catch (IOException exception) {
-                logger.log(Level.SEVERE, "Connection not found", exception);
-            } finally {
-                if (connection != null) {
-                    connection.disconnect();
-                }
-            }
-            // listOfRequestTraceJsonObject.clear();
-            sb.setLength(0);
-        } else {
-            logger.log(Level.INFO, "Nothing to send, it is likely the TraceStore is empty");
-            //listOfRequestTraceJsonObject.clear();
-            sb.setLength(0);
+        if (event.is(requestTraceStore.TRACE_STORE_FULL)) {
+            bootStarpCloudTraceService();
         }
     }
 
     private void bootStarpCloudTraceService() {
-
         if (enabled) {
-            if (hzCore.isEnabled()) {
-                hazelcastInstance = hzCore.getInstance();
-                semaphore = hazelcastInstance.getSemaphore("semaphore");
-            }
-            //sendToCloudEndpoint(cloudTraceConfiguration.getURL());
-            sendTraces();
-            System.out.println("sTARTED");
+            Long frequencyValue = Long.valueOf(cloudTraceConfiguration.getFrequencyValue()).longValue();
+            TimeUnit frequencyUnit = TimeUnit.valueOf(cloudTraceConfiguration.getFrequencyUnit());
+            String cloudEndpointURL = cloudTraceConfiguration.getCloudEndpointUrl();
+            executor = Executors.newScheduledThreadPool(1, new ThreadFactory() {
+                public Thread newThread(Runnable r) {
+                    return new Thread(r, THREAD_NAME);
+                }
+            });
+            executor.scheduleAtFixedRate(new CloudTraceServiceTask(cloudEndpointURL, requestTraceStore, payaraInstance, hzCore), 0, frequencyValue, frequencyUnit);
         }
-
     }
 
     private void shutDownCloudTraceService() {
-        System.out.println("Shutdown");
-        semaphore.release();
+        if (executor != null) {
+            executor.shutdownNow();
+            executor = null;
+        }
     }
 
     public void start() {
@@ -304,5 +166,21 @@ public class CloudTraceService implements EventListener {
             this.enabled = false;
             shutDownCloudTraceService();
         }
+    }
+
+    public String getInstanceID() {
+        return instanceID;
+    }
+
+    public void setInstanceID(String instanceID) {
+        this.instanceID = instanceID;
+    }
+
+    public String getNewInstanceID() {
+        return newInstanceID;
+    }
+
+    public void setNewInstanceID(String NewInstanceID) {
+        this.newInstanceID = NewInstanceID;
     }
 }
