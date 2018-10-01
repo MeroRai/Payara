@@ -99,8 +99,6 @@ public class ClusteredCDIEventBusImpl implements CDIEventListener, ClusteredCDIE
     @PostConstruct
     void postConstruct() {
         ctxUtil = Globals.getDefaultHabitat().getService(JavaEEContextUtil.class);
-        ExtendedDeploymentContext dc = Globals.getDefaultHabitat().getService(Deployment.class).getCurrentDeploymentContext();
-        ctxUtil.setInstanceComponentId(DOLUtils.getComponentEnvId((JndiNameEnvironment)DOLUtils.getCurrentBundleForContext(dc)));
         try {
             InitialContext ctx = new InitialContext();
             managedExecutorService = (ManagedExecutorService) ctx.lookup("java:comp/DefaultManagedExecutorService");
