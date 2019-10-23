@@ -103,16 +103,16 @@ public class GetMonitoringServiceConfiguration implements AdminCommand {
         AMXConfiguration amxConfiguration = config.getExtensionByType(AMXConfiguration.class);
 
         final ActionReport actionReport = context.getActionReport();
-        final String[] headers= {"Enabled", "AMX Enabled", "MBeans Enabled"};
+        final String[] headers= {"Monitoring Enabled", "AMX Enabled", "MBeans Enabled"};
 
         ColumnFormatter columnFormatter = new ColumnFormatter(headers);
         columnFormatter.addRow(new Object[]{monitoringService.getMonitoringEnabled(), amxConfiguration.getEnabled(), monitoringService.getMbeanEnabled()});
         actionReport.appendMessage(columnFormatter.toString());
 
         Map<String, Object> extraPropertiesMap = new HashMap<>();
-        extraPropertiesMap.put("enabled", monitoringService.getMonitoringEnabled());
+        extraPropertiesMap.put("monitoringEnabled", monitoringService.getMonitoringEnabled());
         extraPropertiesMap.put("amxEnabled", amxConfiguration.getEnabled());
-        extraPropertiesMap.put("mbeansEnabled", monitoringService.getMbeanEnabled());
+        extraPropertiesMap.put("mbeanEnabled", monitoringService.getMbeanEnabled());
 
         Properties extraProperties = new Properties();
         extraProperties.put("getMonitoringServiceConfiguration", extraPropertiesMap);
