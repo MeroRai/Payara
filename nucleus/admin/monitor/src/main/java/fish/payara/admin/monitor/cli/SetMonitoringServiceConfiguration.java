@@ -122,6 +122,7 @@ public class SetMonitoringServiceConfiguration implements AdminCommand {
 
     @Override
     public void execute(AdminCommandContext context) {
+        System.out.println("Here at set monitoring service confighurationt ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
         final ActionReport actionReport = context.getActionReport();
 
         config = targetUtil.getConfig(target);

@@ -115,6 +115,7 @@ public class SetAmxEnabled implements AdminCommand {
 
     @Override
     public void execute(AdminCommandContext context) {
+        System.out.println("Here at set AMX enabled ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
         ActionReport actionReport = context.getActionReport();
 
         Config targetConfig = targetUtil.getConfig(target);

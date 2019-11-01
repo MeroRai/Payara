@@ -77,7 +77,7 @@ import org.jvnet.hk2.config.TransactionFailure;
 @Service(name = "add-instance-to-deployment-group")
 @I18n("add.instance.to.deployment.group")
 @PerLookup
-@ExecuteOn(value={RuntimeType.ALL}, ifFailure = FailurePolicy.Ignore, ifOffline = FailurePolicy.Ignore, ifNeverStarted = FailurePolicy.Ignore)
+@ExecuteOn(value={RuntimeType.INSTANCE}, ifFailure = FailurePolicy.Ignore, ifOffline = FailurePolicy.Ignore, ifNeverStarted = FailurePolicy.Ignore)
 @RestEndpoints({
     @RestEndpoint(configBean = DeploymentGroups.class,
             opType = RestEndpoint.OpType.POST,

@@ -67,6 +67,20 @@ public final class Constants {
         "thread-pool",
         "transaction-service",
         "web-container",
-        "web-services-container"
+        "web-services-container",
+        "cloudElasticity",
+        "cloudOrchestrator",
+        "cloudTenantManager",
+        "cloudVirtAssemblyService",
+        "connectorConnectionPool",
+        "connectorService",
+        "ejbContainer",
+        "jdbcConnectionPool",
+        "jmsService",
+        "threadPool",
+        "transactionService",
+        "webContainer",
+        "webServicesContainer",
+        "httpService"
     };
 }

@@ -105,7 +105,7 @@
                     mapPut(map="#{pageSession.amxMap}" key="dynamic" value="#{pageSession.dynamic}");
                     getUIComponent(clientId="$pageSession{tableRowGroupId}", component=>$attribute{tableRowGroup});
                     getAllSingleMapRows(TableRowGroup="${tableRowGroup}" Rows=>$attribute{allRows});
-                    updateMonitorLevels(endpoint="#{pageSession.selfUrl}/module-monitoring-levels",  allRows="#{requestScope.allRows}")
+                    updateMonitorLevels(allRows="#{requestScope.allRows}" config="#{pageSession.configName}");
                     
                     gf.updateEntity(endpoint="#{sessionScope.REST_URL}/set-monitoring-service-configuration"
                         skipAttrs="#{pageSession.skipAttrsList}"

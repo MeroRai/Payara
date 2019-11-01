@@ -96,6 +96,7 @@ public class AMXBootService implements ConfigListener {
 
     @Override
     public UnprocessedChangeEvents changed(PropertyChangeEvent[] events) {
+        System.out.println("Here at unchanged kasdksakdlkjaskjldklaskldaslkdjklasjdkljaskldj");
         UnprocessedChangeEvents unchanged = null;
         for (PropertyChangeEvent event: events){
             if (event.getPropertyName().contains("enabled")){

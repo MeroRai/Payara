@@ -42,44 +42,27 @@
 
 package com.sun.enterprise.config.serverbeans;
 
-import com.sun.enterprise.config.util.ConfigApiLoggerInfo;
-import com.sun.enterprise.config.util.InstanceRegisterInstanceCommandParameters;
-import static com.sun.enterprise.config.util.RegisterInstanceCommandParameters.ParameterNames.*;
 import com.sun.enterprise.config.serverbeans.customvalidators.ConfigRefConstraint;
 import com.sun.enterprise.config.serverbeans.customvalidators.ConfigRefValidator;
-import com.sun.enterprise.config.serverbeans.customvalidators.NotTargetKeyword;
 import com.sun.enterprise.config.serverbeans.customvalidators.NotDuplicateTargetName;
-import com.sun.enterprise.config.util.ServerHelper;
+import com.sun.enterprise.config.serverbeans.customvalidators.NotTargetKeyword;
+import com.sun.enterprise.config.serverbeans.customvalidators.ReferenceConstraint;
+import com.sun.enterprise.config.util.ConfigApiLoggerInfo;
+import com.sun.enterprise.config.util.InstanceRegisterInstanceCommandParameters;
 import com.sun.enterprise.config.util.PortBaseHelper;
 import com.sun.enterprise.config.util.PortManager;
+import com.sun.enterprise.config.util.ServerHelper;
 import com.sun.enterprise.util.LocalStringManagerImpl;
 import com.sun.enterprise.util.io.FileUtils;
 import com.sun.enterprise.util.net.NetUtils;
-import java.io.*;
-import org.glassfish.api.Param;
-import org.glassfish.api.admin.AdminCommandContext;
-import org.glassfish.config.support.*;
-import com.sun.enterprise.config.serverbeans.customvalidators.ReferenceConstraint;
 import fish.payara.enterprise.config.serverbeans.DGServerRef;
 import fish.payara.enterprise.config.serverbeans.DeploymentGroup;
 import fish.payara.enterprise.config.serverbeans.DeploymentGroups;
-
-import org.jvnet.hk2.annotations.Service;
-import org.glassfish.hk2.api.PerLookup;
-import org.jvnet.hk2.config.*;
-import org.jvnet.hk2.config.types.Property;
-import org.jvnet.hk2.config.types.PropertyBag;
-import org.glassfish.api.ActionReport;
-import org.glassfish.api.admin.config.Named;
-import org.glassfish.api.admin.config.PropertiesDesc;
-import org.glassfish.api.admin.config.ReferenceContainer;
-import org.glassfish.quality.ToDo;
-import static org.glassfish.config.support.Constants.*;
-
 import java.beans.PropertyVetoException;
-import java.util.List;
+import java.io.*;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -88,10 +71,25 @@ import javax.validation.Payload;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
-
-import org.glassfish.api.admin.ServerEnvironment;
+import org.glassfish.api.ActionReport;
+import org.glassfish.api.Param;
+import org.glassfish.api.admin.AdminCommandContext;
 import org.glassfish.api.admin.CommandRunner;
+import org.glassfish.api.admin.ServerEnvironment;
+import org.glassfish.api.admin.config.Named;
+import org.glassfish.api.admin.config.PropertiesDesc;
+import org.glassfish.api.admin.config.ReferenceContainer;
 import org.glassfish.api.logging.LogHelper;
+import org.glassfish.config.support.*;
+import org.glassfish.hk2.api.PerLookup;
+import org.glassfish.quality.ToDo;
+import org.jvnet.hk2.annotations.Service;
+import org.jvnet.hk2.config.*;
+import org.jvnet.hk2.config.types.Property;
+import org.jvnet.hk2.config.types.PropertyBag;
+
+import static com.sun.enterprise.config.util.RegisterInstanceCommandParameters.ParameterNames.*;
+import static org.glassfish.config.support.Constants.*;
 
 /**
  *
@@ -518,6 +516,7 @@ public interface Server extends ConfigBeanProxy, PropertyBag, Named, SystemPrope
         public void decorate(AdminCommandContext context, final Server instance) throws TransactionFailure, PropertyVetoException {
             Config ourConfig = null;
             Cluster ourCluster = null;
+            DeploymentGroup ourDeploymentGroup = null;
             Logger logger = ConfigApiLoggerInfo.getLogger();
             LocalStringManagerImpl localStrings = new LocalStringManagerImpl(Server.class);
             Transaction tx = Transaction.getTransaction(instance);
@@ -551,35 +550,24 @@ public interface Server extends ConfigBeanProxy, PropertyBag, Named, SystemPrope
                 pbh.verifyPortBase();
                 pbh.setPorts();
             }
+            System.out.println("ConfigRefff name is = " + configRef + "+++++++++++++++++++++++++++++++++++++++++++++++++++++");
+            System.out.println("Instane name = " + instance.getName() + " ++++++++++++++++++++++++++++++++++++++++++++++++++++++");
             
             if (deploymentGroup != null && !deploymentGroup.trim().isEmpty()) {
-                DeploymentGroup dg = domain.getDeploymentGroupNamed(deploymentGroup);
-                if (dg == null) {
+                System.out.println("Here at deployment group in server.java +++++++++++++++++++++++++++++++++++++++++++++++++++ ");
+                ourDeploymentGroup = domain.getDeploymentGroupNamed(deploymentGroup);
+                if (ourDeploymentGroup == null) {
                     throw new TransactionFailure("Deployment Group does not exist " + deploymentGroup);
                 }
-                DeploymentGroup writableDg = tx.enroll(dg);
+        
+                System.out.println("Dpleoue,nt grpup nme before enrolling = " + ourDeploymentGroup.getName() + " +++++++++++++++++++++++++++++++++++++++++++++");
+                DeploymentGroup writableDg = tx.enroll(ourDeploymentGroup);
                 DGServerRef ref = writableDg.createChild(DGServerRef.class);
+                System.out.println("Instances name in deployment group before ref.setRef = " + instance.getName() + " ++++++++++++++++++++++++++++++++++++++++++++");
                 ref.setRef(instance.getName());
                 writableDg.getDGServerRef().add(ref);
                 
-                // add application and resource refs from the deployment group
-                List<ApplicationRef> refs = dg.getApplicationRef();
-                for (ApplicationRef ref1 : refs) {
-                    ApplicationRef aref = instance.createChild(ApplicationRef.class);
-                    aref.setRef(ref1.getRef());
-                    aref.setEnabled(ref1.getEnabled());
-                    aref.setVirtualServers(ref1.getVirtualServers());
-                    instance.getApplicationRef().add(aref);
-                }
-                
-                // add resource refs on the deployment group
-                List<ResourceRef> rrefs = dg.getResourceRef();
-                for (ResourceRef rref : rrefs) {
-                    ResourceRef nrref = instance.createChild(ResourceRef.class);
-                    nrref.setRef(rref.getRef());
-                    nrref.setEnabled(rref.getEnabled());
-                    instance.getResourceRef().add(nrref);
-                }
+        
             }
 
             // cluster instance using cluster config
@@ -596,6 +584,7 @@ public interface Server extends ConfigBeanProxy, PropertyBag, Named, SystemPrope
                         if (cluster != null && clusterName.equals(cluster.getName())) {
                             ourCluster = cluster;
                             String configName = cluster.getConfigRef();
+                            System.out.println("Cluster configname = " + configName + " ++++++++++++++++++++");
                             instance.setConfigRef(configName);
                             clusterExists = true;
                             ourConfig = domain.getConfigNamed(configName);
@@ -707,6 +696,7 @@ public interface Server extends ConfigBeanProxy, PropertyBag, Named, SystemPrope
 
             //stand-alone instance using default-config if config not specified
             if (configRef == null && clusterName == null) {
+                System.out.println("Here with config nukk  ++++++++++++++++++++++++++++++++++++++++++++++++++++");
                 Config defaultConfig = domain.getConfigs().getConfigByName("default-config");
 
                 if (defaultConfig == null) {
@@ -756,7 +746,8 @@ public interface Server extends ConfigBeanProxy, PropertyBag, Named, SystemPrope
                     instance.getApplicationRef().add(newAppRef);
                 }
             }
-
+            
+            this.addDeploymentGroupRefs(ourDeploymentGroup, instance);
             this.addClusterRefs(ourCluster, instance);
             if (checkPorts) {
                 
@@ -819,6 +810,34 @@ public interface Server extends ConfigBeanProxy, PropertyBag, Named, SystemPrope
             }
         }
 
+        private void addDeploymentGroupRefs(DeploymentGroup deploymentGroup, Server instance) throws TransactionFailure, PropertyVetoException {
+            // add application and resource refs from the deployment group
+            // List<ApplicationRef> refs = dg.getApplicationRef();
+            if (deploymentGroup != null) {
+                for (ApplicationRef ref1 : deploymentGroup.getApplicationRef()) {
+                    if (instance.getApplicationRef(ref1.getRef()) == null) {
+                        ApplicationRef aref = instance.createChild(ApplicationRef.class);
+                        aref.setRef(ref1.getRef());
+                        aref.setDisableTimeoutInMinutes(ref1.getDisableTimeoutInMinutes());
+                        aref.setEnabled(ref1.getEnabled());
+                        aref.setLbEnabled(ref1.getLbEnabled());
+                        aref.setVirtualServers(ref1.getVirtualServers());
+                        instance.getApplicationRef().add(aref);
+                    }
+                }
+
+                // add resource refs on the deployment group
+                //List<ResourceRef> rrefs = dg.getResourceRef();
+                for (ResourceRef rref : deploymentGroup.getResourceRef()) {
+                    if (instance.getResourceRef(rref.getRef()) == null) {
+                        ResourceRef nrref = instance.createChild(ResourceRef.class);
+                        nrref.setRef(rref.getRef());
+                        nrref.setEnabled(rref.getEnabled());
+                        instance.getResourceRef().add(nrref);
+                    }
+                }
+            }
+        }
         private void addClusterRefs(Cluster cluster, Server instance) throws TransactionFailure, PropertyVetoException {
             if (cluster != null) {
                 for (ApplicationRef appRef : cluster.getApplicationRef()) {
@@ -870,10 +889,11 @@ public interface Server extends ConfigBeanProxy, PropertyBag, Named, SystemPrope
             }
 
             if (isStandAlone) { // remove config <instance>-config
-                
+                System.out.println("Chilf oindsadkas is = " + child.getName() + "++++++++++++++++++++++++++++++++++++++");
                 // remove any deployment group references
                 List<DeploymentGroup> dgs = child.getDeploymentGroup();
                 for (DeploymentGroup dg : dgs) {
+                    System.out.println("here about to remove deployment group +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
                     if (t != null) {
                         DeploymentGroup writableDg = t.enroll(dg);
                         List<DGServerRef> refs = writableDg.getDGServerRef();
