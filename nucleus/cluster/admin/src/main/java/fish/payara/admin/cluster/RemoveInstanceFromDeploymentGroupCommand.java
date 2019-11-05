@@ -43,7 +43,7 @@ import com.sun.enterprise.config.serverbeans.ApplicationRef;
 import com.sun.enterprise.config.serverbeans.Domain;
 import com.sun.enterprise.config.serverbeans.ResourceRef;
 import com.sun.enterprise.config.serverbeans.Server;
-import fish.payara.enterprise.config.serverbeans.DGServerRef;
+import com.sun.enterprise.config.serverbeans.ServerRef;
 import fish.payara.enterprise.config.serverbeans.DeploymentGroup;
 import fish.payara.enterprise.config.serverbeans.DeploymentGroups;
 import java.util.Arrays;
@@ -122,7 +122,7 @@ public class RemoveInstanceFromDeploymentGroupCommand implements AdminCommand {
                 return;
             }
 
-            DGServerRef deploymentGroupServerRef = deploymentGroup.getDGServerRefByRef(instance);
+            ServerRef deploymentGroupServerRef = deploymentGroup.getDGServerRefByRef(instance);
             if (deploymentGroupServerRef == null) {
                 report.setActionExitCode(ActionReport.ExitCode.FAILURE);
                 report.setMessage("Deployment Group " + deploymentGroupName + " does not contain server " + instance);

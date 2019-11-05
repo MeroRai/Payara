@@ -49,13 +49,11 @@ import com.sun.enterprise.config.serverbeans.Server;
 import com.sun.enterprise.config.serverbeans.Servers;
 import com.sun.enterprise.config.util.ConfigApiLoggerInfo;
 import com.sun.enterprise.util.LocalStringManagerImpl;
-
+import com.sun.enterprise.util.SystemPropertyConstants;
 import java.util.logging.Logger;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import javax.validation.Payload;
-
-import com.sun.enterprise.util.SystemPropertyConstants;
 import org.glassfish.api.admin.config.Named;
 
 public class ConfigRefValidator

@@ -41,24 +41,6 @@
 
 package com.sun.enterprise.v3.admin.cluster;
 
-import java.util.Map;
-import org.glassfish.api.admin.AdminCommand;
-import org.glassfish.api.admin.AdminCommandContext;
-import org.glassfish.api.admin.ExecuteOn;
-import org.glassfish.api.admin.RuntimeType;
-import org.glassfish.api.admin.ServerEnvironment;
-import org.glassfish.api.ActionReport;
-import org.jvnet.hk2.annotations.Service;
-import javax.inject.Inject;
-import javax.inject.Named;
-
-import org.glassfish.hk2.api.PerLookup;
-import org.jvnet.hk2.config.ConfigSupport;
-import org.jvnet.hk2.config.SingleConfigCode;
-import org.jvnet.hk2.config.TransactionFailure;
-import java.beans.PropertyVetoException;
-
-import com.sun.enterprise.util.LocalStringManagerImpl;
 import com.sun.enterprise.config.serverbeans.Cluster;
 import com.sun.enterprise.config.serverbeans.Domain;
 import com.sun.enterprise.config.serverbeans.Node;
@@ -68,7 +50,19 @@ import com.sun.enterprise.config.serverbeans.ServerRef;
 import com.sun.enterprise.config.serverbeans.Servers;
 import com.sun.enterprise.config.serverbeans.SystemProperty;
 import com.sun.enterprise.config.util.InstanceRegisterInstanceCommandParameters;
+import com.sun.enterprise.util.LocalStringManagerImpl;
+import fish.payara.enterprise.config.serverbeans.DeploymentGroup;
+import java.beans.PropertyVetoException;
+import java.util.Map;
+import javax.inject.Inject;
+import javax.inject.Named;
+import org.glassfish.api.ActionReport;
 import org.glassfish.api.admin.*;
+import org.glassfish.hk2.api.PerLookup;
+import org.jvnet.hk2.annotations.Service;
+import org.jvnet.hk2.config.ConfigSupport;
+import org.jvnet.hk2.config.SingleConfigCode;
+import org.jvnet.hk2.config.TransactionFailure;
 
 
 /**
@@ -154,7 +148,7 @@ public class InstanceRegisterInstanceCommand extends InstanceRegisterInstanceCom
                         return newServer;
                     }
                 }, domain.getServers());
-
+                
                 // create server-ref on cluster
                 Cluster thisCluster = domain.getClusterNamed(clusterName);
                 if (thisCluster != null) {
@@ -170,6 +164,22 @@ public class InstanceRegisterInstanceCommand extends InstanceRegisterInstanceCom
                             return param;
                         }
                     }, thisCluster);
+                }
+                
+                   // create server-ref on cluster
+                DeploymentGroup thisDeploymentGroup = domain.getDeploymentGroupNamed(deploymentGroup);
+                if (thisDeploymentGroup != null) {
+                    ConfigSupport.apply(new SingleConfigCode<DeploymentGroup>() {
+
+                        @Override
+                        public Object run(DeploymentGroup param) throws PropertyVetoException, TransactionFailure {
+
+                            ServerRef newServerRef = param.createChild(ServerRef.class);
+                            newServerRef.setRef(instanceName);
+                            param.getDGServerRef().add(newServerRef);
+                            return param;
+                        }
+                    }, thisDeploymentGroup);
                 }
             }
 

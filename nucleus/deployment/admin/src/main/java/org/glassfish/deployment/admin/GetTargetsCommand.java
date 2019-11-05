@@ -40,11 +40,12 @@
 
 package org.glassfish.deployment.admin;
 
-import java.util.List;
-
 import com.sun.enterprise.config.serverbeans.Domain;
+import java.util.List;
+import javax.inject.Inject;
 import org.glassfish.api.ActionReport;
 import org.glassfish.api.Param;
+import org.glassfish.api.admin.AccessRequired;
 import org.glassfish.api.admin.AdminCommand;
 import org.glassfish.api.admin.AdminCommandContext;
 import org.glassfish.api.admin.CommandLock;
@@ -52,11 +53,8 @@ import org.glassfish.api.admin.ExecuteOn;
 import org.glassfish.api.admin.RestEndpoint;
 import org.glassfish.api.admin.RestEndpoints;
 import org.glassfish.api.admin.RuntimeType;
-import javax.inject.Inject;
-import org.glassfish.api.admin.AccessRequired;
-
-import org.jvnet.hk2.annotations.Service;
 import org.glassfish.hk2.api.PerLookup;
+import org.jvnet.hk2.annotations.Service;
 
 @Service(name="_get-targets")
 @ExecuteOn(value={RuntimeType.DAS})
@@ -68,7 +66,7 @@ import org.glassfish.hk2.api.PerLookup;
         path="_get-targets", 
         description="_get-targets")
 })
-@AccessRequired(resource={DeploymentCommandUtils.CLUSTERS_RESOURCE_NAME,DeploymentCommandUtils.SERVERS_RESOURCE_NAME}, action="read")
+@AccessRequired(resource={DeploymentCommandUtils.CLUSTERS_RESOURCE_NAME,DeploymentCommandUtils.SERVERS_RESOURCE_NAME, DeploymentCommandUtils.DEPLOYMENT_GROUPS_RESOURCE_NAME}, action="read")
 public class GetTargetsCommand implements AdminCommand {
 
     @Param(optional=true, primary=true)

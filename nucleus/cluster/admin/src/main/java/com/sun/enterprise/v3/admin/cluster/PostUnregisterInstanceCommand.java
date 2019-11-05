@@ -43,19 +43,18 @@ package com.sun.enterprise.v3.admin.cluster;
 import com.sun.enterprise.admin.util.ClusterOperationUtil;
 import com.sun.enterprise.config.serverbeans.Domain;
 import com.sun.enterprise.config.serverbeans.Server;
-import java.util.logging.Logger;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+import javax.inject.Inject;
 import org.glassfish.api.ActionReport;
 import org.glassfish.api.Param;
 import org.glassfish.api.admin.*;
-import org.glassfish.internal.api.Target;
 import org.glassfish.common.util.admin.ParameterMapExtractor;
-import javax.inject.Inject;
-
-import org.jvnet.hk2.annotations.Service;
 import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.internal.api.Target;
+import org.jvnet.hk2.annotations.Service;
 
 /**
  * Causes InstanceRegisterInstanceCommand executions on the correct remote instances.
@@ -94,10 +93,10 @@ public class PostUnregisterInstanceCommand implements AdminCommand {
                 ParameterMapExtractor pme = new ParameterMapExtractor(this);
                 final ParameterMap paramMap = pme.extract();
                 List<String> targets = new ArrayList<String>();
-                List<Server> instances = target.getInstances(clusterName);
-                for (Server s : instances) {
-                    targets.add(s.getName());
-                }
+                    List<Server> instances = target.getInstances(clusterName);
+                    for (Server s : instances) {
+                        targets.add(s.getName());
+                    }
 
                 ClusterOperationUtil.replicateCommand(
                         "_unregister-instance",

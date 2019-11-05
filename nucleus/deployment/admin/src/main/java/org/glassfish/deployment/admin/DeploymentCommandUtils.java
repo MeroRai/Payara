@@ -45,33 +45,31 @@ import com.sun.enterprise.admin.util.ClusterOperationUtil;
 import com.sun.enterprise.config.serverbeans.Application;
 import com.sun.enterprise.config.serverbeans.ApplicationRef;
 import com.sun.enterprise.config.serverbeans.Applications;
-import com.sun.enterprise.util.io.FileUtils;
 import com.sun.enterprise.config.serverbeans.Cluster;
 import com.sun.enterprise.config.serverbeans.Domain;
-import com.sun.enterprise.config.serverbeans.Server;
+import com.sun.enterprise.util.io.FileUtils;
+import fish.payara.enterprise.config.serverbeans.DeploymentGroup;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.logging.Logger;
+import java.util.List;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.glassfish.api.ActionReport;
+import org.glassfish.api.admin.AccessRequired;
 import org.glassfish.api.admin.AdminCommand;
 import org.glassfish.api.admin.AdminCommandContext;
 import org.glassfish.api.admin.FailurePolicy;
 import org.glassfish.api.admin.ParameterMap;
 import org.glassfish.api.admin.ServerEnvironment;
 import org.glassfish.api.deployment.OpsParams;
+import org.glassfish.common.util.admin.ParameterMapExtractor;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.internal.deployment.Deployment;
-import org.glassfish.common.util.admin.ParameterMapExtractor;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import org.glassfish.api.admin.AccessRequired;
-import org.glassfish.deployment.common.DeploymentUtils;
 import org.jvnet.hk2.config.ConfigBeanProxy;
 
 /**
@@ -86,10 +84,10 @@ public class DeploymentCommandUtils {
     final static String LIBRARY_SECURITY_RESOURCE_PREFIX = "domain/libraries/";
     final static String CLUSTERS_RESOURCE_NAME = "domain/clusters/cluster";
     final static String SERVERS_RESOURCE_NAME = "domain/servers/server";
+    final static String DEPLOYMENT_GROUPS_RESOURCE_NAME = "domain/deployment-groups/deployment-group";
     
     final private static String COPY_IN_PLACE_ARCHIVE_PROP_NAME = "copy.inplace.archive";
     
-    private static final List<String> LIST_CONTAINING_DOMAIN = new ArrayList<String>(Arrays.asList(DeploymentUtils.DOMAIN_TARGET_NAME));
 
     /**
      * Replicates an enable or disable command to all instances in the cluster
@@ -131,6 +129,47 @@ public class DeploymentCommandUtils {
                     context,
                     pMap,
                     habitat);
+        }
+        return ActionReport.ExitCode.SUCCESS;
+    }
+    
+    public static ActionReport.ExitCode replicateEnableDisableToContainingDeploymentGroup(
+            final String commandName,
+            final Domain domain,
+            final String target,
+            final String appName,
+            final ServiceLocator habitat,
+            final AdminCommandContext context,
+            final AdminCommand command) throws IllegalArgumentException, IllegalAccessException {
+        /*
+         * If the target is a cluster instance, the DAS will broadcast the command
+         * to all instances in the cluster so they can all update their configs.
+         */
+        final List<DeploymentGroup> containingDeploymentGroup = domain.getDeploymentGroupsForInstance(target);
+        if (containingDeploymentGroup != null) {
+            final ParameterMapExtractor extractor = new ParameterMapExtractor(command);
+            final ParameterMap pMap = extractor.extract(Collections.EMPTY_LIST);
+            pMap.set("DEFAULT", appName);
+
+            try {
+                for (DeploymentGroup deploymentGroup : containingDeploymentGroup) {
+
+                    ClusterOperationUtil.replicateCommand(
+                            commandName,
+                            FailurePolicy.Error,
+                            FailurePolicy.Warn,
+                            FailurePolicy.Ignore,
+                            deploymentGroup.getInstances(),
+                            context,
+                            pMap,
+                            habitat);
+                }
+
+            } catch (Exception e) {
+
+                return ActionReport.ExitCode.FAILURE;
+            }
+
         }
         return ActionReport.ExitCode.SUCCESS;
     }

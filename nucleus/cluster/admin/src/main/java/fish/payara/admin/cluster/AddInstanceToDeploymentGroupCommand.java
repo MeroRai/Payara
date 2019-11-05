@@ -43,7 +43,7 @@ import com.sun.enterprise.config.serverbeans.ApplicationRef;
 import com.sun.enterprise.config.serverbeans.Domain;
 import com.sun.enterprise.config.serverbeans.ResourceRef;
 import com.sun.enterprise.config.serverbeans.Server;
-import fish.payara.enterprise.config.serverbeans.DGServerRef;
+import com.sun.enterprise.config.serverbeans.ServerRef;
 import fish.payara.enterprise.config.serverbeans.DeploymentGroup;
 import fish.payara.enterprise.config.serverbeans.DeploymentGroups;
 import java.util.Arrays;
@@ -127,7 +127,7 @@ public class AddInstanceToDeploymentGroupCommand implements AdminCommand {
             // OK set up the reference
             try {
                 ConfigSupport.apply((DeploymentGroup dg1) -> {
-                    DGServerRef deploymentGroupServerRef = dg1.createChild(DGServerRef.class);
+                    ServerRef deploymentGroupServerRef = dg1.createChild(ServerRef.class);
                     deploymentGroupServerRef.setRef(instance);
                     dg1.getDGServerRef().add(deploymentGroupServerRef);
                     return deploymentGroupServerRef;

@@ -40,6 +40,8 @@
 
 package com.sun.enterprise.config.serverbeans;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.glassfish.api.I18n;
 import org.glassfish.api.admin.RuntimeType;
 import org.glassfish.config.support.Create;
@@ -48,11 +50,8 @@ import org.glassfish.config.support.TypeAndNameResolver;
 import org.glassfish.config.support.TypeResolver;
 import org.jvnet.hk2.config.ConfigBeanProxy;
 import org.jvnet.hk2.config.Configured;
-import org.jvnet.hk2.config.Element;
 import org.jvnet.hk2.config.DuckTyped;
-
-import java.util.List;
-import java.util.ArrayList;
+import org.jvnet.hk2.config.Element;
 
 /**
  * List of configured servers.
@@ -70,7 +69,7 @@ public interface Servers extends ConfigBeanProxy  {
     @Element
     // example below on how to annotate a CRUD command with cluster specific data.
     @Create(value="_register-instance", resolver= TypeResolver.class, decorator= Server.CreateDecorator.class,
-        cluster=@org.glassfish.api.admin.ExecuteOn(value = RuntimeType.DAS),
+        cluster=@org.glassfish.api.admin.ExecuteOn(value = {RuntimeType.DAS,RuntimeType.INSTANCE}),
         i18n=@I18n("_register.instance.command"))
     @Delete(value="_unregister-instance", resolver= TypeAndNameResolver.class,
             decorator=Server.DeleteDecorator.class,
@@ -110,7 +109,6 @@ public interface Servers extends ConfigBeanProxy  {
         public static List<Server> getServersOnNode(Servers servers, Node node) {
             List<Server> serverList = servers.getServer();
             List<Server> serverListOnNode = new ArrayList<Server>();
-            Server instance = null;
             String nodeName = node.getName();
             if (serverList.size() > 0) {
                 for (Server server: serverList){

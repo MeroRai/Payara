@@ -42,21 +42,20 @@ package com.sun.enterprise.v3.admin.cluster;
 
 import com.sun.enterprise.admin.util.ClusterOperationUtil;
 import com.sun.enterprise.config.serverbeans.Domain;
+import com.sun.enterprise.config.serverbeans.Server;
 import com.sun.enterprise.config.util.InstanceRegisterInstanceCommandParameters;
 import com.sun.enterprise.config.util.RegisterInstanceCommandParameters;
-import com.sun.enterprise.config.serverbeans.Server;
-import java.util.logging.Logger;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+import javax.inject.Inject;
 import org.glassfish.api.ActionReport;
 import org.glassfish.api.admin.*;
-import org.glassfish.internal.api.Target;
 import org.glassfish.common.util.admin.ParameterMapExtractor;
-import javax.inject.Inject;
-
-import org.jvnet.hk2.annotations.Service;
 import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.internal.api.Target;
+import org.jvnet.hk2.annotations.Service;
 
 /**
  * Causes InstanceRegisterInstanceCommand executions on the correct remote instances.
@@ -89,26 +88,37 @@ public class PostRegisterInstanceCommand extends RegisterInstanceCommandParamete
         final  InstanceRegisterInstanceCommandParameters suppInfo =
                 context.getActionReport().getResultType(InstanceRegisterInstanceCommandParameters.class);
 
-        if (suppInfo != null && clusterName != null) {
+        if (suppInfo != null ) {
             try {
                 ParameterMapExtractor pme = new ParameterMapExtractor(suppInfo, this);
                 final ParameterMap paramMap = pme.extract();
 
-                List<String> targets = new ArrayList<String>();
-                List<Server> instances = target.getInstances(this.clusterName);
-                for (Server s : instances) {
-                    targets.add(s.getName());
+                List<String> targets = new ArrayList<>();
+                if (clusterName != null) {
+                    List<Server> instances = target.getInstances(this.clusterName);
+                    for (Server s : instances) {
+                        targets.add(s.getName());
+                    }
+                }
+                
+                if (deploymentGroup != null) {
+                    List<Server> instances = target.getInstances(this.deploymentGroup);
+                    for (Server s : instances) {
+                        targets.add(s.getName());
+                    }
                 }
 
-                ClusterOperationUtil.replicateCommand(
-                        "_register-instance-at-instance",
-                        FailurePolicy.Warn,
-                        FailurePolicy.Warn,
-                        FailurePolicy.Ignore,
-                        targets,
-                        context,
-                        paramMap,
-                        habitat);
+                if (!targets.isEmpty()) {
+                    ClusterOperationUtil.replicateCommand(
+                            "_register-instance-at-instance",
+                            FailurePolicy.Warn,
+                            FailurePolicy.Warn,
+                            FailurePolicy.Ignore,
+                            targets,
+                            context,
+                            paramMap,
+                            habitat);
+                }
             } catch (Exception e) {
                 report.failure(logger, e.getMessage());
             }

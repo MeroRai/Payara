@@ -44,9 +44,17 @@ package com.sun.enterprise.config.serverbeans;
 
 import com.sun.enterprise.config.util.ConfigApiLoggerInfo;
 import com.sun.enterprise.util.StringUtils;
-import fish.payara.enterprise.config.serverbeans.DGServerRef;
 import fish.payara.enterprise.config.serverbeans.DeploymentGroup;
 import fish.payara.enterprise.config.serverbeans.DeploymentGroups;
+import java.beans.PropertyVetoException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.validation.constraints.NotNull;
 import org.glassfish.api.admin.config.ApplicationName;
 import org.glassfish.api.admin.config.PropertiesDesc;
 import org.glassfish.api.admin.config.PropertyDesc;
@@ -60,16 +68,6 @@ import org.jvnet.hk2.config.DuckTyped;
 import org.jvnet.hk2.config.Element;
 import org.jvnet.hk2.config.types.Property;
 import org.jvnet.hk2.config.types.PropertyBag;
-
-import javax.validation.constraints.NotNull;
-import java.beans.PropertyVetoException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 /**
@@ -685,7 +683,7 @@ public interface Domain extends ConfigBeanProxy, PropertyBag, SystemPropertyBag,
             List<DeploymentGroup> dgs = d.getDeploymentGroups().getDeploymentGroup();
             if (dgs != null) {
                 for (DeploymentGroup dg : dgs) {
-                    DGServerRef ref = dg.getDGServerRefByRef(instanceName);
+                    ServerRef ref = dg.getDGServerRefByRef(instanceName);
                     if (ref != null) {
                         result.add(dg);
                     }
@@ -917,7 +915,7 @@ public interface Domain extends ConfigBeanProxy, PropertyBag, SystemPropertyBag,
             // only add non-clustered servers as the cluster 
             // targets will be separately added
             for (Server server : d.getServers().getServer()) {
-                if (server.getCluster() == null && server.getDeploymentGroup().isEmpty()) {
+                if (server.getCluster() == null) {
                     targets.add(server.getName());
                 }
             }

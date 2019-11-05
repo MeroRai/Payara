@@ -55,7 +55,6 @@ import com.sun.enterprise.config.util.ServerHelper;
 import com.sun.enterprise.util.LocalStringManagerImpl;
 import com.sun.enterprise.util.io.FileUtils;
 import com.sun.enterprise.util.net.NetUtils;
-import fish.payara.enterprise.config.serverbeans.DGServerRef;
 import fish.payara.enterprise.config.serverbeans.DeploymentGroup;
 import fish.payara.enterprise.config.serverbeans.DeploymentGroups;
 import java.beans.PropertyVetoException;
@@ -356,7 +355,7 @@ public interface Server extends ConfigBeanProxy, PropertyBag, Named, SystemPrope
             DeploymentGroups dgs = serverDom.getHabitat().getService(DeploymentGroups.class);
             if (dgs != null) {
                 for (DeploymentGroup dg : dgs.getDeploymentGroup()) {
-                    for(DGServerRef ref : dg.getDGServerRef()) {
+                    for(ServerRef ref : dg.getDGServerRef()) {
                         if (ref.getRef().equals(server.getName())) {
                             result.add(dg);
                             break;
@@ -550,24 +549,17 @@ public interface Server extends ConfigBeanProxy, PropertyBag, Named, SystemPrope
                 pbh.verifyPortBase();
                 pbh.setPorts();
             }
-            System.out.println("ConfigRefff name is = " + configRef + "+++++++++++++++++++++++++++++++++++++++++++++++++++++");
-            System.out.println("Instane name = " + instance.getName() + " ++++++++++++++++++++++++++++++++++++++++++++++++++++++");
             
             if (deploymentGroup != null && !deploymentGroup.trim().isEmpty()) {
-                System.out.println("Here at deployment group in server.java +++++++++++++++++++++++++++++++++++++++++++++++++++ ");
                 ourDeploymentGroup = domain.getDeploymentGroupNamed(deploymentGroup);
                 if (ourDeploymentGroup == null) {
                     throw new TransactionFailure("Deployment Group does not exist " + deploymentGroup);
                 }
         
-                System.out.println("Dpleoue,nt grpup nme before enrolling = " + ourDeploymentGroup.getName() + " +++++++++++++++++++++++++++++++++++++++++++++");
                 DeploymentGroup writableDg = tx.enroll(ourDeploymentGroup);
-                DGServerRef ref = writableDg.createChild(DGServerRef.class);
-                System.out.println("Instances name in deployment group before ref.setRef = " + instance.getName() + " ++++++++++++++++++++++++++++++++++++++++++++");
+                ServerRef ref = writableDg.createChild(ServerRef.class);
                 ref.setRef(instance.getName());
                 writableDg.getDGServerRef().add(ref);
-                
-        
             }
 
             // cluster instance using cluster config
@@ -584,7 +576,6 @@ public interface Server extends ConfigBeanProxy, PropertyBag, Named, SystemPrope
                         if (cluster != null && clusterName.equals(cluster.getName())) {
                             ourCluster = cluster;
                             String configName = cluster.getConfigRef();
-                            System.out.println("Cluster configname = " + configName + " ++++++++++++++++++++");
                             instance.setConfigRef(configName);
                             clusterExists = true;
                             ourConfig = domain.getConfigNamed(configName);
@@ -696,7 +687,6 @@ public interface Server extends ConfigBeanProxy, PropertyBag, Named, SystemPrope
 
             //stand-alone instance using default-config if config not specified
             if (configRef == null && clusterName == null) {
-                System.out.println("Here with config nukk  ++++++++++++++++++++++++++++++++++++++++++++++++++++");
                 Config defaultConfig = domain.getConfigs().getConfigByName("default-config");
 
                 if (defaultConfig == null) {
@@ -889,15 +879,13 @@ public interface Server extends ConfigBeanProxy, PropertyBag, Named, SystemPrope
             }
 
             if (isStandAlone) { // remove config <instance>-config
-                System.out.println("Chilf oindsadkas is = " + child.getName() + "++++++++++++++++++++++++++++++++++++++");
                 // remove any deployment group references
                 List<DeploymentGroup> dgs = child.getDeploymentGroup();
                 for (DeploymentGroup dg : dgs) {
-                    System.out.println("here about to remove deployment group +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");
                     if (t != null) {
                         DeploymentGroup writableDg = t.enroll(dg);
-                        List<DGServerRef> refs = writableDg.getDGServerRef();
-                        for (DGServerRef ref : refs) {
+                        List<ServerRef> refs = writableDg.getDGServerRef();
+                        for (ServerRef ref : refs) {
                             if (ref.getRef().equals(child.getName())) {
                                 refs.remove(ref);
                                 break;

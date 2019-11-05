@@ -55,7 +55,6 @@ import javax.validation.constraints.Pattern;
 import org.glassfish.api.Param;
 import org.glassfish.api.admin.config.Named;
 import org.glassfish.api.admin.config.PropertiesDesc;
-import static org.glassfish.config.support.Constants.NAME_SERVER_REGEX;
 import org.jvnet.hk2.config.ConfigSupport;
 import org.jvnet.hk2.config.Configured;
 import org.jvnet.hk2.config.Dom;
@@ -64,6 +63,8 @@ import org.jvnet.hk2.config.Element;
 import org.jvnet.hk2.config.TransactionFailure;
 import org.jvnet.hk2.config.types.Property;
 import org.jvnet.hk2.config.types.PropertyBag;
+
+import static org.glassfish.config.support.Constants.NAME_SERVER_REGEX;
 
 /**
  *
@@ -95,13 +96,13 @@ public interface DeploymentGroup extends Named, Payload, RefContainer, PropertyB
      * @return list of configured {@link ServerRef }
      */
     @Element
-    List<DGServerRef> getDGServerRef();
+    List<ServerRef> getDGServerRef();
     
     @DuckTyped
     List<Server> getInstances();
 
     @DuckTyped
-    public DGServerRef getDGServerRefByRef(String ref);
+    public ServerRef getDGServerRefByRef(String ref);
 
     @DuckTyped
     ApplicationRef getApplicationRef(String appName);
@@ -137,7 +138,7 @@ public interface DeploymentGroup extends Named, Payload, RefContainer, PropertyB
                     clusterDom.getHabitat().getService(Domain.class);
 
             ArrayList<Server> instances = new ArrayList<Server>();
-            for (DGServerRef sRef : me.getDGServerRef()) {
+            for (ServerRef sRef : me.getDGServerRef()) {
                 Server svr =  domain.getServerNamed(sRef.getRef());
                 // the instance's domain.xml only has its own server 
                 // element and not other server elements in the cluster 
@@ -148,8 +149,8 @@ public interface DeploymentGroup extends Named, Payload, RefContainer, PropertyB
             return instances;
         }
 
-        public static DGServerRef getDGServerRefByRef(DeploymentGroup me, String name) {
-            for (DGServerRef ref : me.getDGServerRef()) {
+        public static ServerRef getDGServerRefByRef(DeploymentGroup me, String name) {
+            for (ServerRef ref : me.getDGServerRef()) {
                 if (ref.getRef().equals(name)) {
                     return ref;
                 }
