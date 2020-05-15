@@ -95,7 +95,7 @@
         <pluginRepository>
             <id>payara-patched-externals</id>
             <name>Payara Patched Externals</name>
-            <url>https://raw.github.com/payara/Payara_PatchedProjects/master</url>
+            <url>https://raw.github.com/MeroRai/Payara_PatchedProjects/CUSTCOM-273</url>
             <releases>
                 <enabled>true</enabled>
             </releases>
